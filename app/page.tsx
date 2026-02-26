@@ -469,7 +469,7 @@ export default function Home() {
                         exit={{ opacity: 0 }}
                         className="absolute inset-[3px] pointer-events-none z-20 flex items-start justify-start p-5 overflow-hidden"
                       >
-                        <span className="text-gray-500/50 font-mono text-base sm:text-lg select-none filter blur-[2px]">
+                        <span className="text-gray-500/50 font-mono text-base sm:text-lg select-none">
                           My secret bank pin is 8492. Do not share...
                         </span>
                       </motion.div>
