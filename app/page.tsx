@@ -394,8 +394,21 @@ export default function Home() {
 
       {/* Header section */}
       <div className="text-center space-y-4">
-        <div className="flex justify-center mb-6">
-          <Image src="/hero.webp" alt="Phantom Hero Illustration" width={160} height={160} className="rounded-3xl drop-shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:scale-105 transition-transform duration-700" priority />
+        <div className="flex justify-center mb-6 relative w-40 h-40 mx-auto">
+          {/* Ambient Pulse Behind Image */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-500 blur-2xl rounded-[3rem] opacity-30"
+            animate={{ opacity: [0.15, 0.4, 0.15], scale: [0.85, 1.15, 0.85] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Floating Image Container */}
+          <motion.div
+            animate={{ y: [-8, 8, -8] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            className="relative z-10 w-full h-full"
+          >
+            <Image src="/hero.webp" alt="Phantom Hero Illustration" fill className="rounded-3xl drop-shadow-[0_0_30px_rgba(99,102,241,0.3)] object-cover" priority />
+          </motion.div>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight sm:tracking-tighter">
           Military-Grade <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Encryption</span>
