@@ -1,10 +1,29 @@
 'use client';
 
 import { GlassCard } from '@/components/GlassCard';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import { useState } from 'react';
+import { ChevronDown, Lock, Key, Shield, FileDigit, ServerOff, Cpu, ArrowRight } from 'lucide-react';
+
+const faqs = [
+    {
+        question: "Can Phantom recover my password?",
+        answer: "No. Phantom is a zero-knowledge local client. We do not have servers, databases, or password reset capabilities. If you lose your Secret Key, your data is mathematically impossible to recover."
+    },
+    {
+        question: "Does Phantom track my IP or usage?",
+        answer: "Never. We do not use analytics, we do not track IP addresses, and we do not store cookies. Your privacy is absolute."
+    },
+    {
+        question: "Are my files uploaded to a server for encryption?",
+        answer: "No. 100% of the cryptographic lifting happens entirely within your device's RAM (Random Access Memory) using your browser's native Web Crypto API. Nothing is ever sent over the network."
+    }
+];
 
 export default function SecurityInfo() {
+    const [openFaq, setOpenFaq] = useState<number | null>(null);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -58,6 +77,62 @@ export default function SecurityInfo() {
                     </ul>
                 </div>
 
+                {/* Cryptographic Pipeline Section */}
+                <div className="space-y-6">
+                    <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-4 flex items-center gap-2">
+                        <Cpu className="w-6 h-6 text-red-400" />
+                        The Cryptographic Pipeline
+                    </h2>
+                    <div className="bg-black/40 border border-white/5 p-6 sm:p-8 rounded-3xl relative overflow-hidden">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
+                            {/* Step 1 */}
+                            <div className="flex flex-col items-center text-center space-y-2 w-full sm:w-1/4">
+                                <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400">
+                                    <FileDigit className="w-6 h-6" />
+                                </div>
+                                <div className="text-xs font-bold text-white uppercase tracking-wider">Raw Data</div>
+                                <div className="text-[10px] text-gray-500">Text or Image</div>
+                            </div>
+
+                            <ArrowRight className="w-6 h-6 text-red-500/50 hidden sm:block flex-shrink-0" />
+                            <ArrowRight className="w-6 h-6 text-red-500/50 sm:hidden rotate-90" />
+
+                            {/* Step 2 */}
+                            <div className="flex flex-col items-center text-center space-y-2 w-full sm:w-1/4">
+                                <div className="w-12 h-12 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
+                                    <Key className="w-6 h-6" />
+                                </div>
+                                <div className="text-xs font-bold text-white uppercase tracking-wider">PBKDF2</div>
+                                <div className="text-[10px] text-gray-500">100,000 Iterations</div>
+                            </div>
+
+                            <ArrowRight className="w-6 h-6 text-red-500/50 hidden sm:block flex-shrink-0" />
+                            <ArrowRight className="w-6 h-6 text-red-500/50 sm:hidden rotate-90" />
+
+                            {/* Step 3 */}
+                            <div className="flex flex-col items-center text-center space-y-2 w-full sm:w-1/4">
+                                <div className="w-12 h-12 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                                    <Shield className="w-6 h-6" />
+                                </div>
+                                <div className="text-xs font-bold text-white uppercase tracking-wider">AES-256-GCM</div>
+                                <div className="text-[10px] text-gray-500">Military Grade</div>
+                            </div>
+
+                            <ArrowRight className="w-6 h-6 text-red-500/50 hidden sm:block flex-shrink-0" />
+                            <ArrowRight className="w-6 h-6 text-red-500/50 sm:hidden rotate-90" />
+
+                            {/* Step 4 */}
+                            <div className="flex flex-col items-center text-center space-y-2 w-full sm:w-1/4">
+                                <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                                    <Lock className="w-6 h-6" />
+                                </div>
+                                <div className="text-xs font-bold text-white uppercase tracking-wider">Ciphertext</div>
+                                <div className="text-[10px] text-gray-500">Secure Payload</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="space-y-6">
                     <h2 className="text-xl sm:text-2xl font-bold text-red-300 border-b border-white/10 pb-4">Important Warnings</h2>
                     <div className="bg-red-500/10 border border-red-500/20 p-6 sm:p-8 rounded-3xl space-y-5">
@@ -71,6 +146,39 @@ export default function SecurityInfo() {
                             <br className="hidden sm:block" />
                             Everything is stored temporarily in RAM. The keys and plaintexts are cleared when the session closes.
                         </p>
+                    </div>
+                </div>
+
+                {/* FAQ Section */}
+                <div className="space-y-6 pt-4">
+                    <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-4 flex items-center gap-2">
+                        <ServerOff className="w-6 h-6 text-gray-400" />
+                        Zero-Knowledge FAQ
+                    </h2>
+                    <div className="space-y-3">
+                        {faqs.map((faq, idx) => (
+                            <div key={idx} className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden transition-colors hover:bg-white/[0.05]">
+                                <button
+                                    onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                                    className="w-full flex items-center justify-between p-5 text-left focus:outline-none"
+                                >
+                                    <span className="font-bold text-gray-200">{faq.question}</span>
+                                    <ChevronDown className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform duration-300 ${openFaq === idx ? 'rotate-180' : ''}`} />
+                                </button>
+                                <AnimatePresence>
+                                    {openFaq === idx && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="px-5 pb-5 text-gray-400 text-sm leading-relaxed"
+                                        >
+                                            {faq.answer}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </GlassCard>
