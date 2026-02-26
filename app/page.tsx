@@ -32,6 +32,9 @@ export default function Home() {
   const [showQR, setShowQR] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Dual Image Encryption Mode
+  const [imageMode, setImageMode] = useState<'stego' | 'full'>('stego');
+
   // File Upload Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -320,11 +323,10 @@ export default function Home() {
       const reader = new FileReader();
 
       if (file.type.startsWith('image/')) {
-        // If it's an image, let's treat it as a Steganography Carrier!
         reader.onload = async (event) => {
           if (event.target?.result) {
             try {
-              // Attempt to extract existing hidden ciphertext first
+              // ALWAYS attempt to extract ciphertext first, just in case it's a Stego image they want to decode
               const secret = await extractTextFromImage(event.target.result as string);
               if (secret && secret.startsWith('--- PHANTOM SECURE BLOCK')) {
                 setText(secret);
@@ -334,10 +336,17 @@ export default function Home() {
                 return;
               }
             } catch {
-              // Not a stego image, meaning they want to hide data IN it later.
-              // We'll place the dataURL in state with a special tag.
-              setText(`[STEGO_CARRIER]\n${event.target.result}`);
-              toast.success('Carrier image ready. Lock message to proceed.');
+              // Not a stego image (no hidden payload).
+              // Check the user's explicit preference via the UI toggle:
+              if (imageMode === 'stego') {
+                setText(`[STEGO_CARRIER]\n${event.target.result}`);
+                toast.success('Carrier image ready. Lock message to proceed.');
+              } else {
+                // 'full' encryption mode: Treat the Image exactly like a standard document file
+                const fileData = `[PHANTOM_FILE:${file.name}:${file.type}]\n${event.target.result}`;
+                setText(fileData);
+                toast.success('Image loaded for Full Encryption. Ready to lock.');
+              }
               setLoading(false);
             }
           }
@@ -520,6 +529,30 @@ export default function Home() {
                   </div>
                 )}
               </div>
+
+              {/* Image Processing Mode Toggle */}
+              {mode === 'encode' && (
+                <div className="mb-6 space-y-3 bg-black/40 border border-white/5 p-4 rounded-2xl relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
+                  <label className="text-sm font-semibold text-indigo-200 block">Image Encryption Preference</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10">
+                    <button
+                      onClick={() => setImageMode('stego')}
+                      className={`flex flex-col text-left p-3 rounded-xl border transition-all ${imageMode === 'stego' ? 'bg-indigo-500/20 border-indigo-500/50 text-white shadow-inner shadow-indigo-500/20' : 'bg-white/[0.02] border-white/10 text-gray-400 hover:bg-white/[0.05] hover:border-white/20'}`}
+                    >
+                      <span className="font-bold text-sm">Steganography</span>
+                      <span className="text-xs opacity-70 mt-1">Hide text inside image</span>
+                    </button>
+                    <button
+                      onClick={() => setImageMode('full')}
+                      className={`flex flex-col text-left p-3 rounded-xl border transition-all ${imageMode === 'full' ? 'bg-indigo-500/20 border-indigo-500/50 text-white shadow-inner shadow-indigo-500/20' : 'bg-white/[0.02] border-white/10 text-gray-400 hover:bg-white/[0.05] hover:border-white/20'}`}
+                    >
+                      <span className="font-bold text-sm">Full Encryption</span>
+                      <span className="text-xs opacity-70 mt-1">Encrypt image file itself</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2 relative">
                 {/* Ambient Aura overlay for keystrokes */}
