@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/icon.png" alt="Phantom Logo" width="120" />
+  <img src="public/logo.png" alt="Phantom Logo" width="120" />
   <h1>Phantom</h1>
   <p><strong>Secure & Invisible Client-Side Communication</strong></p>
 </div>
