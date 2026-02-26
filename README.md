@@ -8,7 +8,8 @@ Phantom is a static, zero-knowledge, and fully client-side encryption utility fo
 - **Zero-Knowledge**: No backend, no API, no databases. Runs purely locally in the browser.
 - **Obfuscation Layer**: Adds token scrambling and semantic framing to ciphertext.
 - **Glassmorphism Theme**: Cyberpunk / futuristic gradient UI built with Tailwind CSS.
-- **Mobile Responsive**: Fully usable on mobile and desktop devices.
+- **Premium Animations**: Cinematic Framer Motion physics, floating elements, and matrix typewriter reveals.
+- **Mobile Responsive**: Meticulously optimized typography, padding, and layout for an app-like mobile experience.
 - **Export Options**: 1-click Copy, QR Code generation, and direct TXT file downloads.
 
 ## Vercel Deployment Instructions (FREE)
