@@ -43,6 +43,21 @@ Phantom was designed to be trustless:
 - **Encryption Algorithm (AES-GCM):** Data is not only encrypted but authenticated. Any modifications to the ciphertext or obfuscation layer will cause it to be rejected.
 - **Stateless Execution:** State is never saved to `localStorage` or `sessionStorage`. All computation uses variables kept in active memory.
 
+## How Image & File Encryption Works (Explained Simply)
+When you upload files or images into Phantom, different things happen depending on what you upload and your goals.
+
+### 1. The "Base64" Conversion (Standard Files)
+If you upload an ordinary document (like a PDF, Word Doc, or Text File), Phantom converts the **entire file** into a massive block of text called **Base64**. It looks like random letters and numbers.
+- **Encryption:** Phantom then encrypts this massive block of text using your Secret Key.
+- **Extraction:** When the receiver enters the secret key, Phantom reads the locked text, decrypts it back into Base64, and then immediately converts the Base64 back into the original recognizable file so it can be downloaded.
+
+### 2. Steganography: Hiding Secrets Inside Images
+If you upload an **Image** (.PNG or .JPG), Phantom asks if you want to use it as a "Carrier". This uses an entirely different concept called **Steganography**.
+- **Carrier Preparation:** The image itself is **NOT** encrypted. It remains a completely normal image that anyone can view.
+- **Weaponization:** You type a secret message, which Phantom then encrypts with your password.
+- **Hiding the Data:** Phantom mathematically weaves your tiny encrypted message into the completely invisible, least-significant color pixels of the image you uploaded. 
+- **The Result:** The image looks identical to the human eye. If someone intercepts it, they just see a normal picture. But if someone drags that picture back into Phantom and enters the password, the hidden pixels are extracted and your secret message is revealed.
+
 ## How to Extend Later with Real AI Locally
 To expand this project into utilizing real local AI models (without external APIs), you can integrate **WebLLM** or **Transformers.js**:
 1. Install `transformers.js` (`npm i @xenova/transformers`).

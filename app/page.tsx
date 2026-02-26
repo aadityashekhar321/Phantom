@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { GlassCard } from '@/components/GlassCard';
 import { MagneticButton } from '@/components/MagneticButton';
-import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Cpu, Github, MoreVertical } from 'lucide-react';
+import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Cpu, Github, MoreVertical, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { extractTextFromImage, hideTextInImage } from '@/lib/stego';
 import dynamic from 'next/dynamic';
@@ -29,6 +29,9 @@ export default function Home() {
   const [stegoCarrier, setStegoCarrier] = useState('');
   const [showQR, setShowQR] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // File Upload Ref
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Telemetry Stats
   const [cryptoTime, setCryptoTime] = useState(0);
@@ -301,69 +304,81 @@ export default function Home() {
     setIsDragging(false);
   };
 
+  const processFile = async (file: File) => {
+    // Prevent massive files from crashing browser RAM
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File too large. Please keep Vault uploads under 5MB.');
+      return;
+    }
+
+    setMode('encode');
+    setLoading(true);
+
+    try {
+      const reader = new FileReader();
+
+      if (file.type.startsWith('image/')) {
+        // If it's an image, let's treat it as a Steganography Carrier!
+        reader.onload = async (event) => {
+          if (event.target?.result) {
+            try {
+              // Attempt to extract existing hidden ciphertext first
+              const secret = await extractTextFromImage(event.target.result as string);
+              if (secret && secret.startsWith('--- PHANTOM SECURE BLOCK')) {
+                setText(secret);
+                setMode('decode');
+                toast.success('Hidden message found inside image! Set to Decode.');
+                setLoading(false);
+                return;
+              }
+            } catch {
+              // Not a stego image, meaning they want to hide data IN it later.
+              // We'll place the dataURL in state with a special tag.
+              setText(`[STEGO_CARRIER]\n${event.target.result}`);
+              toast.success('Carrier image ready. Lock message to proceed.');
+              setLoading(false);
+            }
+          }
+        };
+      } else {
+        // Standard Phantom Vault File
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            const fileData = `[PHANTOM_FILE:${file.name}:${file.type}]\n${event.target.result}`;
+            setText(fileData);
+            toast.success(`File loaded securely. Ready to lock.`);
+            setLoading(false);
+          }
+        };
+      }
+
+      reader.onerror = () => {
+        toast.error('Failed to read file.');
+        setLoading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast.error('Error parsing file data.');
+      setLoading(false);
+    }
+  };
+
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
+      await processFile(e.dataTransfer.files[0]);
+    }
+  };
 
-      // Prevent massive files from crashing browser RAM
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('File too large. Please keep Vault uploads under 5MB.');
-        return;
-      }
-
-      setMode('encode');
-      setLoading(true);
-
-      try {
-        const reader = new FileReader();
-
-        if (file.type.startsWith('image/')) {
-          // If it's an image, let's treat it as a Steganography Carrier!
-          reader.onload = async (event) => {
-            if (event.target?.result) {
-              try {
-                // Attempt to extract existing hidden ciphertext first
-                const secret = await extractTextFromImage(event.target.result as string);
-                if (secret && secret.startsWith('--- PHANTOM SECURE BLOCK')) {
-                  setText(secret);
-                  setMode('decode');
-                  toast.success('Hidden message found inside image! Set to Decode.');
-                  setLoading(false);
-                  return;
-                }
-              } catch {
-                // Not a stego image, meaning they want to hide data IN it later.
-                // We'll place the dataURL in state with a special tag.
-                setText(`[STEGO_CARRIER]\n${event.target.result}`);
-                toast.success('Carrier image ready. Lock message to proceed.');
-                setLoading(false);
-              }
-            }
-          };
-        } else {
-          // Standard Phantom Vault File
-          reader.onload = (event) => {
-            if (event.target?.result) {
-              const fileData = `[PHANTOM_FILE:${file.name}:${file.type}]\n${event.target.result}`;
-              setText(fileData);
-              toast.success(`File loaded securely. Ready to lock.`);
-              setLoading(false);
-            }
-          };
-        }
-
-        reader.onerror = () => {
-          toast.error('Failed to read file.');
-          setLoading(false);
-        };
-        reader.readAsDataURL(file);
-      } catch {
-        toast.error('Error parsing file data.');
-        setLoading(false);
-      }
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      await processFile(e.target.files[0]);
+    }
+    // Reset input so the same file can be selected again if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -420,9 +435,29 @@ export default function Home() {
             {/* Dynamic Animated Border Effect */}
             <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
             
-            <label className="text-sm font-semibold text-indigo-200 ml-1 block relative z-10 hover:text-indigo-100 transition-colors">
-              {mode === 'encode' ? 'Your Message or File (Drag & Drop)' : 'Scrambled Secret Code'}
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-semibold text-indigo-200 ml-1 block relative z-10 hover:text-indigo-100 transition-colors">
+                {mode === 'encode' ? 'Your Message or File' : 'Scrambled Secret Code'}
+              </label>
+              <div className="relative z-10">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-indigo-300 hover:text-white bg-indigo-500/20 hover:bg-indigo-500/40 px-3 py-1.5 rounded-full border border-indigo-500/30 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  title="Upload Image/File"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Upload File</span>
+                  <span className="sm:hidden">Upload</span>
+                </button>
+              </div>
+            </div>
+            
             <div className="relative w-full z-10">
               <AnimatePresence mode="popLayout">
                 {mode === 'encode' && !text && !isDragging && !hasInteracted && !isFocused && (
