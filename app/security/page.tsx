@@ -10,7 +10,7 @@ export default function SecurityInfo() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="space-y-8"
+            className="space-y-12 sm:space-y-16"
         >
             <div className="text-center space-y-4 px-4">
                 <div className="flex justify-center mb-6">
@@ -20,10 +20,10 @@ export default function SecurityInfo() {
                 <p className="text-gray-400 text-base sm:text-lg">Understanding the cryptographic foundation of Phantom.</p>
             </div>
 
-            <GlassCard className="max-w-3xl mx-auto space-y-6">
-                <div className="space-y-4">
-                    <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-2">Technical Specifications</h2>
-                    <ul className="list-disc list-inside space-y-3 text-gray-300 text-sm sm:text-base">
+            <GlassCard className="max-w-3xl mx-auto space-y-10 px-5 py-8 sm:px-10 sm:py-12">
+                <div className="space-y-6">
+                    <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-4">Technical Specifications</h2>
+                    <ul className="list-disc list-inside space-y-5 sm:space-y-4 text-gray-300 text-base leading-relaxed">
                         <li>
                             <strong>Algorithm:</strong> AES (Advanced Encryption Standard) in GCM (Galois/Counter Mode).
                         </li>
@@ -45,14 +45,18 @@ export default function SecurityInfo() {
                     </ul>
                 </div>
 
-                <div className="space-y-4">
-                    <h2 className="text-lg sm:text-xl font-bold text-red-300">Important Warnings</h2>
-                    <div className="bg-red-500/10 border border-red-500/20 p-4 sm:p-5 rounded-2xl space-y-3">
-                        <p className="text-red-200 text-sm sm:text-base">
-                            <strong>1. Lost passwords cannot be recovered.</strong> Phantom is zero-knowledge locally executing software. There is no backend password reset feature.
+                <div className="space-y-6">
+                    <h2 className="text-xl sm:text-2xl font-bold text-red-300 border-b border-white/10 pb-4">Important Warnings</h2>
+                    <div className="bg-red-500/10 border border-red-500/20 p-6 sm:p-8 rounded-3xl space-y-5">
+                        <p className="text-red-200 text-base leading-relaxed">
+                            <strong>1. Lost passwords cannot be recovered.</strong>
+                            <br className="hidden sm:block" />
+                            Phantom is zero-knowledge locally executing software. There is no backend password reset feature.
                         </p>
-                        <p className="text-red-200 text-sm sm:text-base">
-                            <strong>2. No browser storage.</strong> Everything is stored temporarily in RAM. The keys and plaintexts are cleared when the session closes.
+                        <p className="text-red-200 text-base leading-relaxed">
+                            <strong>2. No browser storage.</strong>
+                            <br className="hidden sm:block" />
+                            Everything is stored temporarily in RAM. The keys and plaintexts are cleared when the session closes.
                         </p>
                     </div>
                 </div>
