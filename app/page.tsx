@@ -34,6 +34,7 @@ export default function Home() {
 
   // Dual Image Encryption Mode
   const [imageMode, setImageMode] = useState<'stego' | 'full'>('stego');
+  const [stagedImage, setStagedImage] = useState<{ data: string, name: string, type: string } | null>(null);
 
   // File Upload Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -171,11 +172,26 @@ export default function Home() {
       return;
     }
 
-    if (!text && !text.startsWith('[STEGO_CARRIER]')) {
+    if (!text && !stagedImage && !text.startsWith('[STEGO_CARRIER]')) {
       toast.error('Please provide data to lock.');
       return;
     }
 
+    // Handle Staged Images first
+    if (mode === 'encode' && stagedImage) {
+      if (imageMode === 'stego') {
+        setStegoCarrier(stagedImage.data);
+        setStegoPayload('');
+        setStegoModalOpen(true);
+      } else {
+        const fileData = `[PHANTOM_FILE:${stagedImage.name}:${stagedImage.type}]\n${stagedImage.data}`;
+        await executeProcessing(fileData);
+        setStagedImage(null);
+      }
+      return;
+    }
+
+    // Legacy fallback support
     if (mode === 'encode' && text.startsWith('[STEGO_CARRIER]\n')) {
       setStegoCarrier(text.replace('[STEGO_CARRIER]\n', ''));
       setStegoPayload('');
@@ -284,6 +300,7 @@ export default function Home() {
     setOutput('');
     setShowQR(false);
     setHasInteracted(false);
+    setStagedImage(null);
   };
 
   const downloadTxtFile = () => {
@@ -326,7 +343,7 @@ export default function Home() {
         reader.onload = async (event) => {
           if (event.target?.result) {
             try {
-              // ALWAYS attempt to extract ciphertext first, just in case it's a Stego image they want to decode
+              // ALWAYS attempt to extract ciphertext first (Decode scenario)
               const secret = await extractTextFromImage(event.target.result as string);
               if (secret && secret.startsWith('--- PHANTOM SECURE BLOCK')) {
                 setText(secret);
@@ -337,16 +354,14 @@ export default function Home() {
               }
             } catch {
               // Not a stego image (no hidden payload).
-              // Check the user's explicit preference via the UI toggle:
-              if (imageMode === 'stego') {
-                setText(`[STEGO_CARRIER]\n${event.target.result}`);
-                toast.success('Carrier image ready. Lock message to proceed.');
-              } else {
-                // 'full' encryption mode: Treat the Image exactly like a standard document file
-                const fileData = `[PHANTOM_FILE:${file.name}:${file.type}]\n${event.target.result}`;
-                setText(fileData);
-                toast.success('Image loaded for Full Encryption. Ready to lock.');
-              }
+              // STAGE the image instead of dumping Base64 into the text box.
+              setStagedImage({
+                data: event.target.result as string,
+                name: file.name,
+                type: file.type
+              });
+              setText(''); // Clear main box
+              toast.success('Image staged. Select your encryption preference below.');
               setLoading(false);
             }
           }
@@ -459,11 +474,19 @@ export default function Home() {
                 {/* Dynamic Animated Border Effect */}
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
 
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-semibold text-indigo-200 ml-1 block relative z-10 hover:text-indigo-100 transition-colors">
-                    {mode === 'encode' ? 'Your Message or File' : 'Scrambled Secret Code'}
+                <div className="flex items-center justify-between mb-2 sm:mb-4 px-1 relative z-20">
+                  <label className="text-sm font-semibold text-indigo-200">
+                    {mode === 'encode' ? (stagedImage ? 'Image Stager' : 'Data to Lock') : 'Data to Unlock'}
                   </label>
-                  <div className="relative z-10">
+                  <div className="flex items-center gap-3">
+                    {stagedImage && (
+                      <button
+                        onClick={() => setStagedImage(null)}
+                        className="text-xs font-semibold text-gray-400 hover:text-red-400 transition-colors"
+                      >
+                        Clear Image
+                      </button>
+                    )}
                     <input
                       type="file"
                       ref={fileInputRef}
@@ -484,7 +507,7 @@ export default function Home() {
 
                 <div className="relative w-full z-10">
                   <AnimatePresence mode="popLayout">
-                    {mode === 'encode' && !text && !isDragging && !hasInteracted && !isFocused && (
+                    {mode === 'encode' && !text && !isDragging && !hasInteracted && !isFocused && !stagedImage && (
                       <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -496,7 +519,7 @@ export default function Home() {
                         </span>
                       </motion.div>
                     )}
-                    {mode === 'encode' && !text && !isDragging && (hasInteracted || isFocused) && (
+                    {mode === 'encode' && !text && !isDragging && (hasInteracted || isFocused) && !stagedImage && (
                       <motion.span
                         key={placeholderIdx}
                         initial={{ opacity: 0, y: 5 }}
@@ -509,19 +532,36 @@ export default function Home() {
                       </motion.span>
                     )}
                   </AnimatePresence>
-                  <textarea
-                    value={text.startsWith('[STEGO_CARRIER]') ? "Image loaded. Ready to embed hidden data." : text}
-                    onChange={handleTextChange}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    placeholder={mode === 'decode' ? "Paste the locked message code or drop an image..." : ""}
-                    className={`w-full h-36 relative ${isDragging ? 'bg-indigo-500/10 border-indigo-400 scale-[1.02]' : 'bg-black/80 border-white/10'} border-2 border-dashed sm:border-solid sm:border rounded-2xl p-5 text-base sm:text-lg ${text.startsWith('[STEGO_CARRIER]') ? 'text-indigo-400 font-bold' : 'text-white'} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] font-mono resize-none transition-all leading-relaxed backdrop-blur-md z-10`}
-                  />
+
+                  {!stagedImage ? (
+                    <textarea
+                      value={text}
+                      onChange={handleTextChange}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() => setIsFocused(false)}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      placeholder={mode === 'decode' ? "Paste the locked message code or drop an image..." : ""}
+                      className={`w-full h-36 relative ${isDragging ? 'bg-indigo-500/10 border-indigo-400 scale-[1.02]' : 'bg-black/80 border-white/10'} border-2 border-dashed sm:border-solid sm:border rounded-2xl p-5 text-base sm:text-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] font-mono resize-none transition-all leading-relaxed backdrop-blur-md z-10`}
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-36 relative bg-indigo-500/5 border-2 border-indigo-500/30 rounded-2xl p-5 flex flex-col items-center justify-center space-y-3 z-10"
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                    >
+                      <ImageIcon className="w-8 h-8 text-indigo-400 opacity-80" />
+                      <div className="text-center">
+                        <p className="text-indigo-200 font-bold mb-1 truncate max-w-xs">{stagedImage.name}</p>
+                        <p className="text-xs text-indigo-400/60">Image successfully staged for processing</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {isDragging && (
+
+                {isDragging && !stagedImage && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-6">
                     <div className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-full shadow-2xl drop-shadow-[0_0_15px_rgba(79,70,229,0.5)]">
                       Drop into Vault
@@ -530,11 +570,15 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Image Processing Mode Toggle */}
-              {mode === 'encode' && (
-                <div className="mb-6 space-y-3 bg-black/40 border border-white/5 p-4 rounded-2xl relative overflow-hidden">
+              {/* Image Processing Mode Toggle (Hidden until Staged) */}
+              {mode === 'encode' && stagedImage && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginTop: 24 }}
+                  className="mb-6 space-y-3 bg-black/40 border border-indigo-500/20 p-4 rounded-2xl relative overflow-hidden"
+                >
                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
-                  <label className="text-sm font-semibold text-indigo-200 block">Image Encryption Preference</label>
+                  <label className="text-sm font-semibold text-indigo-300 block">Select Processing Mode</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10">
                     <button
                       onClick={() => setImageMode('stego')}
@@ -551,7 +595,7 @@ export default function Home() {
                       <span className="text-xs opacity-70 mt-1">Encrypt image file itself</span>
                     </button>
                   </div>
-                </div>
+                </motion.div>
               )}
 
               <div className="space-y-2 relative">
