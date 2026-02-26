@@ -34,8 +34,8 @@ export default function HowItWorks() {
                 <p className="text-gray-400 text-base sm:text-lg">Three simple steps to absolute privacy.</p>
             </div>
 
-            <GlassCard className="max-w-3xl mx-auto space-y-12 px-5 py-8 sm:px-10 sm:py-12">
-                <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 items-start">
+            <GlassCard className="max-w-3xl mx-auto space-y-16 px-5 py-8 sm:px-10 sm:py-12">
+                <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-10 sm:gap-12 items-start">
                     <div className="hidden md:flex flex-col items-center mt-2">
                         <div className="w-12 h-12 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold border border-indigo-500/30">
                             <Lock className="w-6 h-6" />
@@ -58,7 +58,7 @@ export default function HowItWorks() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-10 sm:gap-12 items-start">
                     <div className="hidden md:flex flex-col items-center mt-2">
                         <div className="w-12 h-12 rounded-full bg-violet-500/20 text-violet-400 flex items-center justify-center font-bold border border-violet-500/30">
                             <Cpu className="w-6 h-6" />
@@ -83,7 +83,7 @@ export default function HowItWorks() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 items-start">
+                <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-10 sm:gap-12 items-start">
                     <div className="hidden md:flex flex-col items-center mt-2">
                         <div className="w-12 h-12 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold border border-cyan-500/30">
                             <Key className="w-6 h-6" />
@@ -107,7 +107,7 @@ export default function HowItWorks() {
             </GlassCard>
 
             {/* NEW: Dual Image Encryption Section */}
-            <div className="text-center space-y-4 pt-10 px-4">
+            <div className="text-center space-y-6 pt-16 sm:pt-20 px-4">
                 <h2 className="text-2xl sm:text-3xl font-bold text-white flex justify-center items-center gap-3">
                     <ImageIcon className="text-indigo-400 w-8 h-8" />
                     Advanced Image Handling

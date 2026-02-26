@@ -1,66 +1,101 @@
-# Phantom - Secure & Invisible Communication
+<div align="center">
+  <img src="public/icon.png" alt="Phantom Logo" width="120" />
+  <h1>Phantom</h1>
+  <p><strong>Secure & Invisible Client-Side Communication</strong></p>
+</div>
 
-Phantom is a static, zero-knowledge, and fully client-side encryption utility for secure communication. It converts ordinary text into AES-256-GCM encrypted ciphertext, adds a token-scrambled semantic obfuscation layer, and allows easy sharing via Base64 strings, QR codes, or TXT downloads.
+<br />
 
-## Features
-- **AES-256-GCM Encryption**: Secure encryption with random IV and Salt.
-- **PBKDF2 Key Derivation**: 100,000 iterations against brute-forcing.
-- **Zero-Knowledge**: No backend, no API, no databases. Runs purely locally in the browser.
-- **Obfuscation Layer**: Adds token scrambling and semantic framing to ciphertext.
-- **Glassmorphism Theme**: Cyberpunk / futuristic gradient UI built with Tailwind CSS.
-- **Premium Animations**: Cinematic Framer Motion physics, floating elements, and matrix typewriter reveals.
-- **Mobile Responsive**: Meticulously optimized typography, padding, and layout for an app-like mobile experience.
-- **Export Options**: 1-click Copy, QR Code generation, and direct TXT file downloads.
+Phantom is a static, zero-knowledge, fully client-side encryption utility built for absolute privacy. It converts ordinary text into AES-256-GCM encrypted ciphertext, adds a token-scrambled semantic obfuscation layer, and allows easy sharing via Base64 strings, QR codes, or TXT file downloads. 
 
-## Vercel Deployment Instructions (FREE)
-This project is built using Next.js strictly as a static frontend application. It requires absolutely no paid services or external APIs. It will run indefinitely on Vercel's completely free *Hobby* tier.
+Crucially, **Phantom operates 100% in your browser**—there are no databases, no backends, and no telemetry.
 
-### Step 1: Push to GitHub
-1. Open your terminal in the `Phantom` folder.
-2. Run standard git commands to initialize and commit:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit of Phantom"
-   ```
-3. Create a new repository on your [GitHub account](https://github.com/new).
-4. Run the remote command provided by GitHub (e.g. `git remote add origin https://github.com/yourusername/Phantom.git`).
-5. Push your code: `git push -u origin main`.
+---
 
-### Step 2: Deploy to Vercel
-1. Go to [Vercel.com](https://vercel.com/) and create a free account if you haven't already.
-2. Click **Add New Project**.
-3. Under **Import Git Repository**, find `Phantom` and click **Import**.
-4. Vercel will automatically detect that it is a Next.js project.
-5. You **do not** need to add any environment variables since there is no backend API.
-6. Click **Deploy**. Vercel will build the project and assign you a free `your-project.vercel.app` domain.
+## 🚀 Key Features
 
-### Paid Services Confirmation
-**NO paid services are required.** The app strictly relies on the Web Crypto API built directly into all modern web browsers.
+- **Military-Grade Security**: AES-256-GCM encryption with randomly generated IVs and Salts for every payload.
+- **Robust Key Derivation**: PBKDF2 with a SHA-256 hash and 100,000 iterations to withstand parallelized GPU brute-forcing.
+- **Zero-Knowledge Architecture**: The app is completely stateless. No backend API, no tracking, and no `localStorage`. The keys exist only in active RAM.
+- **Advanced Steganography**: Hide your encrypted payloads entirely inside the pixel data of ordinary images without noticeably altering the visuals.
+- **Full Image Encryption**: Lock an entire image file directly into impenetrable ciphertext.
+- **Premium Glassmorphism UI**: A highly polished, cyberpunk-inspired responsive interface built with modern Framer Motion kinematics and Tailwind CSS.
+- **Offline Capable**: Since the entire engine runs locally natively via Web Crypto APIs, Phantom can be downloaded and run completely offline in absolute parity mode.
 
-## Security Explanation
-Phantom was designed to be trustless:
-- **Key Derivation (PBKDF2):** Passwords are stretched 100,000 times before being used as a key.
-- **Encryption Algorithm (AES-GCM):** Data is not only encrypted but authenticated. Any modifications to the ciphertext or obfuscation layer will cause it to be rejected.
-- **Stateless Execution:** State is never saved to `localStorage` or `sessionStorage`. All computation uses variables kept in active memory.
+---
 
-## How Image & File Encryption Works (Explained Simply)
-When you upload files or images into Phantom, different things happen depending on what you upload and your goals.
+## 🔒 The Security Model
 
-### 1. The "Base64" Conversion (Standard Files)
-If you upload an ordinary document (like a PDF, Word Doc, or Text File), Phantom converts the **entire file** into a massive block of text called **Base64**. It looks like random letters and numbers.
-- **Encryption:** Phantom then encrypts this massive block of text using your Secret Key.
-- **Extraction:** When the receiver enters the secret key, Phantom reads the locked text, decrypts it back into Base64, and then immediately converts the Base64 back into the original recognizable file so it can be downloaded.
+Phantom was designed to be fundamentally trustless:
 
-### 2. Steganography: Hiding Secrets Inside Images
-If you upload an **Image** (.PNG or .JPG), Phantom asks if you want to use it as a "Carrier". This uses an entirely different concept called **Steganography**.
-- **Carrier Preparation:** The image itself is **NOT** encrypted. It remains a completely normal image that anyone can view.
-- **Weaponization:** You type a secret message, which Phantom then encrypts with your password.
-- **Hiding the Data:** Phantom mathematically weaves your tiny encrypted message into the completely invisible, least-significant color pixels of the image you uploaded. 
-- **The Result:** The image looks identical to the human eye. If someone intercepts it, they just see a normal picture. But if someone drags that picture back into Phantom and enters the password, the hidden pixels are extracted and your secret message is revealed.
+1. **You hold the key**: Passwords cannot be recovered because we never receive them. 
+2. **Authenticated Ciphertexts**: Data is not just encrypted, it is authenticated (GCM). Any bitwise modifications made to the payload in transit will cause Phantom to reject decryption.
+3. **No Network Requests**: Once the static UI loads, zero network requests are made.
 
-## How to Extend Later with Real AI Locally
-To expand this project into utilizing real local AI models (without external APIs), you can integrate **WebLLM** or **Transformers.js**:
-1. Install `transformers.js` (`npm i @xenova/transformers`).
-2. Download a lightweight quantized model (e.g. `Xenova/LaMini-Flan-T5-77M` or a local ONNX embedding model).
-3. Use the model completely in the browser through WebGPU to perform semantic obfuscation. For example, instruct the local AI to "rewrite the base64 code as a fictional story" and extract the base64 from it on decode. No calls to OpenAI or Anthropic required!
+---
+
+## 🧠 How It Works
+
+Phantom handles standard text and image payloads dynamically based on user intent.
+
+### Standard Files & Text
+If you upload an ordinary document or type a message, Phantom converts the entire payload into Base64. It is then encrypted using your Secret Key, outputting a highly secure ciphertext block that can be shared instantly.
+
+### Dual Image Encryption Engine
+If you upload an **Image** (`.PNG` or `.JPG`), Phantom provides two distinct advanced processing modes:
+
+1. **Steganography (Hide Text in Image)**: You type a secret message. Phantom encrypts the message and mathematically weaves the ciphertext into the *least-significant bits (LSB)* of the image's pixel data. The carrier image looks identical to the human eye but hides your encrypted data inside.
+2. **Full File Encryption (Lock Image)**: Phantom treats the image file itself as a raw data blob. It encrypts the entire image file into a massive string of data. The image is destroyed and rendered unreadable until the correct Secret Key reconstructs it on the other side.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 14 (React)
+- **Styling**: Tailwind CSS, Glassmorphism aesthetics
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **Cryptography**: Native Browser Web Crypto API
+- **Image Processing**: HTML5 Canvas (Client-side)
+- **Deployment**: Vercel (Static HTML Export)
+
+---
+
+## 📦 Installation & Deployment
+
+This project requires exactly zero paid services, container deployments, or external APIs. 
+
+### Local Development
+To run this project locally on your machine:
+```bash
+# 1. Clone the repository
+git clone https://github.com/aadityashekhar321/Phantom.git
+cd Phantom
+
+# 2. Install dependencies
+npm install
+
+# 3. Start the development server
+npm run dev
+```
+
+### Free Vercel Deployment
+Phantom is intentionally built as a static application, meaning it can be hosted indefinitely on Vercel's completely free *Hobby* tier.
+
+1. Push this code to a repository on your GitHub account.
+2. Go to [Vercel.com](https://vercel.com/) and click **Add New Project**.
+3. Import your `Phantom` repository.
+4. Vercel will auto-detect Next.js. **Do not** add any environment variables.
+5. Click **Deploy**.
+
+---
+
+## 🔮 Future Improvements
+
+Want to add real local AI models? Because Phantom is fully client-side, you can integrate [WebLLM](https://webllm.mlc.ai/) or [Transformers.js](https://huggingface.co/docs/transformers.js/index) natively in the browser via WebGPU to perform localized semantic obfuscation (e.g., instructing an AI to disguise Base64 strings as fictional stories) without ever sending data to OpenAI or Anthropic.
+
+---
+
+<div align="center">
+  <p>Built for privacy. Execute strictly offline if heavily targeted.</p>
+</div>

@@ -52,10 +52,10 @@ export default function SecurityInfo() {
                 <p className="text-gray-400 text-base sm:text-lg">Understanding the cryptographic foundation of Phantom.</p>
             </div>
 
-            <GlassCard className="max-w-3xl mx-auto space-y-10 px-5 py-8 sm:px-10 sm:py-12">
-                <div className="space-y-6">
-                    <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-4">Technical Specifications</h2>
-                    <ul className="list-disc list-inside space-y-5 sm:space-y-4 text-gray-300 text-base leading-relaxed">
+            <GlassCard className="max-w-3xl mx-auto space-y-12 sm:space-y-16 px-5 py-8 sm:px-10 sm:py-12">
+                <div className="space-y-8 sm:space-y-10">
+                    <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6">Technical Specifications</h2>
+                    <ul className="list-disc list-inside space-y-5 sm:space-y-6 text-gray-300 text-base leading-relaxed">
                         <li>
                             <strong>Algorithm:</strong> AES (Advanced Encryption Standard) in GCM (Galois/Counter Mode).
                         </li>
@@ -78,8 +78,8 @@ export default function SecurityInfo() {
                 </div>
 
                 {/* Cryptographic Pipeline Section */}
-                <div className="space-y-6">
-                    <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-4 flex items-center gap-2">
+                <div className="space-y-8 sm:space-y-10">
+                    <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
                         <Cpu className="w-6 h-6 text-red-400" />
                         The Cryptographic Pipeline
                     </h2>
@@ -133,9 +133,9 @@ export default function SecurityInfo() {
                     </div>
                 </div>
 
-                <div className="space-y-6">
-                    <h2 className="text-xl sm:text-2xl font-bold text-red-300 border-b border-white/10 pb-4">Important Warnings</h2>
-                    <div className="bg-red-500/10 border border-red-500/20 p-6 sm:p-8 rounded-3xl space-y-5">
+                <div className="space-y-8 sm:space-y-10">
+                    <h2 className="text-xl sm:text-2xl font-bold text-red-300 border-b border-white/10 pb-6">Important Warnings</h2>
+                    <div className="bg-red-500/10 border border-red-500/20 p-6 sm:p-10 rounded-3xl space-y-6">
                         <p className="text-red-200 text-base leading-relaxed">
                             <strong>1. Lost passwords cannot be recovered.</strong>
                             <br className="hidden sm:block" />
@@ -150,12 +150,12 @@ export default function SecurityInfo() {
                 </div>
 
                 {/* FAQ Section */}
-                <div className="space-y-6 pt-4">
-                    <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-4 flex items-center gap-2">
+                <div className="space-y-8 sm:space-y-10 pt-4">
+                    <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
                         <ServerOff className="w-6 h-6 text-gray-400" />
                         Zero-Knowledge FAQ
                     </h2>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         {faqs.map((faq, idx) => (
                             <div key={idx} className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden transition-colors hover:bg-white/[0.05]">
                                 <button
