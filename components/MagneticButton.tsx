@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import React, { useRef } from 'react';
 
 interface MagneticButtonProps {
@@ -24,14 +24,14 @@ export const MagneticButton: React.FC<MagneticButtonProps> = ({ children, classN
     if (!ref.current) return;
 
     const rect = ref.current.getBoundingClientRect();
-    
+
     // Calculate distance from center of button
     const middleX = rect.width / 2;
     const middleY = rect.height / 2;
-    
+
     const offsetX = e.clientX - rect.left - middleX;
     const offsetY = e.clientY - rect.top - middleY;
-    
+
     // Move the button slightly towards the cursor (magnetic pull)
     x.set(offsetX * 0.2);
     y.set(offsetY * 0.2);

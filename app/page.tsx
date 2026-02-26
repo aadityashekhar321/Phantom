@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { GlassCard } from '@/components/GlassCard';
 import { MagneticButton } from '@/components/MagneticButton';
-import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Cpu, Github, MoreVertical, Upload } from 'lucide-react';
+import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import { extractTextFromImage, hideTextInImage } from '@/lib/stego';
 import dynamic from 'next/dynamic';
@@ -31,13 +31,13 @@ export default function Home() {
   const [stegoCarrier, setStegoCarrier] = useState('');
   const [showQR, setShowQR] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   // File Upload Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Telemetry Stats
   const [cryptoTime, setCryptoTime] = useState(0);
-  
+
   // Interactive Dummy Demo State
   const [hasInteracted, setHasInteracted] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -56,10 +56,10 @@ export default function Home() {
           setMode('decode');
           setHasInteracted(true);
           toast.success('Secure payload detected from URL! Ready to decrypt.');
-          
+
           // Clean the URL so it doesn't stay in history
           window.history.replaceState(null, '', window.location.pathname);
-        } catch (e) {
+        } catch {
           console.error("Failed to parse URL hash data");
         }
       }
@@ -70,9 +70,9 @@ export default function Home() {
     if (mode === 'decode') return;
     const interval = setInterval(() => {
       setPlaceholderIdx((prev) => (prev + 1) % encodePlaceholders.length);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(interval);
-  }, [mode]);
+  }, [mode, encodePlaceholders.length]);
 
   useEffect(() => {
     if (!output) {
@@ -88,7 +88,7 @@ export default function Home() {
     const intervalTime = duration / maxIterations;
 
     const targetText = output;
-    
+
     // Performance optimization: Don't scramble massive files
     if (targetText.length > 500) {
       setDisplayedOutput(targetText);
@@ -113,7 +113,7 @@ export default function Home() {
         clearInterval(interval);
         setDisplayedOutput(targetText);
       }
-      
+
       iteration += 1;
     }, intervalTime);
 
@@ -147,9 +147,9 @@ export default function Home() {
   };
 
   // Simple Password Strength Evaluator
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePasswordChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
     triggerKeystrokeAura();
-    const val = e.target.value;
+    const val = evt.target.value;
     setPassword(val);
 
     let strength = 0;
@@ -191,7 +191,7 @@ export default function Home() {
     setStegoModalOpen(false);
     await executeProcessing(stegoPayload, true);
   };
-  
+
   const triggerHaptic = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(50);
@@ -202,7 +202,7 @@ export default function Home() {
     setLoading(true);
     setOutput('');
     setShowQR(false);
-    
+
     const startTime = performance.now();
 
     try {
@@ -409,281 +409,280 @@ export default function Home() {
         {/* Left Column: Input Form */}
         <div className="w-full">
           <GlassCard className="w-full h-full">
-        {/* Toggle Mode */}
-        <div className="flex bg-black/40 p-1.5 rounded-full mb-8 relative shadow-inner border border-white/5 mx-auto max-w-md">
-          <div
-            className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-transform duration-300 ease-out shadow-lg shadow-indigo-500/25 ${mode === 'encode' ? 'translate-x-0' : 'translate-x-[calc(100%+12px)]'
-              }`}
-          />
-          <button
-            onClick={() => { setMode('encode'); setOutput(''); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full z-10 font-semibold transition-colors ${mode === 'encode' ? 'text-white' : 'text-gray-400 hover:text-white'
-              }`}
-          >
-            <Lock className="w-4 h-4" /> Lock
-          </button>
-          <button
-            onClick={() => { setMode('decode'); setOutput(''); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full z-10 font-semibold transition-colors ${mode === 'decode' ? 'text-white' : 'text-gray-400 hover:text-white'
-              }`}
-          >
-            <Unlock className="w-4 h-4" /> Unlock
-          </button>
-        </div>
-
-        {/* Form Inputs */}
-        <div className="space-y-6">
-          <div className="space-y-2 relative group">
-            {/* Dynamic Animated Border Effect */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
-            
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-indigo-200 ml-1 block relative z-10 hover:text-indigo-100 transition-colors">
-                {mode === 'encode' ? 'Your Message or File' : 'Scrambled Secret Code'}
-              </label>
-              <div className="relative z-10">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-indigo-300 hover:text-white bg-indigo-500/20 hover:bg-indigo-500/40 px-3 py-1.5 rounded-full border border-indigo-500/30 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  title="Upload Image/File"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Upload File</span>
-                  <span className="sm:hidden">Upload</span>
-                </button>
-              </div>
-            </div>
-            
-            <div className="relative w-full z-10">
-              <AnimatePresence mode="popLayout">
-                {mode === 'encode' && !text && !isDragging && !hasInteracted && !isFocused && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-[3px] pointer-events-none z-20 flex items-start justify-start p-5 overflow-hidden"
-                  >
-                    <span className="text-gray-500/50 font-mono text-base sm:text-lg select-none filter blur-[2px]">
-                      My secret bank pin is 8492. Do not share...
-                    </span>
-                  </motion.div>
-                )}
-                {mode === 'encode' && !text && !isDragging && (hasInteracted || isFocused) && (
-                  <motion.span
-                    key={placeholderIdx}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute left-[21px] top-[21px] text-gray-500 pointer-events-none text-base sm:text-lg font-mono"
-                  >
-                    {encodePlaceholders[placeholderIdx]}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              <textarea
-                value={text.startsWith('[STEGO_CARRIER]') ? "Image loaded. Ready to embed hidden data." : text}
-                onChange={handleTextChange}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                placeholder={mode === 'decode' ? "Paste the locked message code or drop an image..." : ""}
-                className={`w-full h-36 relative ${isDragging ? 'bg-indigo-500/10 border-indigo-400 scale-[1.02]' : 'bg-black/80 border-white/10'} border-2 border-dashed sm:border-solid sm:border rounded-2xl p-5 text-base sm:text-lg ${text.startsWith('[STEGO_CARRIER]') ? 'text-indigo-400 font-bold' : 'text-white'} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] font-mono resize-none transition-all leading-relaxed backdrop-blur-md z-10`}
+            {/* Toggle Mode */}
+            <div className="flex bg-black/40 p-1.5 rounded-full mb-8 relative shadow-inner border border-white/5 mx-auto max-w-md">
+              <div
+                className={`absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-transform duration-300 ease-out shadow-lg shadow-indigo-500/25 ${mode === 'encode' ? 'translate-x-0' : 'translate-x-[calc(100%+12px)]'
+                  }`}
               />
+              <button
+                onClick={() => { setMode('encode'); setOutput(''); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full z-10 font-semibold transition-colors ${mode === 'encode' ? 'text-white' : 'text-gray-400 hover:text-white'
+                  }`}
+              >
+                <Lock className="w-4 h-4" /> Lock
+              </button>
+              <button
+                onClick={() => { setMode('decode'); setOutput(''); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full z-10 font-semibold transition-colors ${mode === 'decode' ? 'text-white' : 'text-gray-400 hover:text-white'
+                  }`}
+              >
+                <Unlock className="w-4 h-4" /> Unlock
+              </button>
             </div>
-            {isDragging && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-6">
-                <div className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-full shadow-2xl drop-shadow-[0_0_15px_rgba(79,70,229,0.5)]">
-                  Drop into Vault
-                </div>
-              </div>
-            )}
-          </div>
 
-          <div className="space-y-2 relative">
-            {/* Ambient Aura overlay for keystrokes */}
-            <div id="password-input-aura" className="absolute inset-0 rounded-2xl pointer-events-none z-20 opacity-0" />
-            
-            <label className="text-sm font-semibold text-indigo-200 ml-1 block">Secret Key (Password)</label>
-            <input
-              type="password"
-              value={password}
-              onChange={handlePasswordChange}
-              placeholder="Enter a strong password..."
-              className="w-full relative z-10 bg-black/80 border border-white/10 rounded-2xl p-5 text-base sm:text-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] transition-all font-mono tracking-wider"
-            />
-            {/* Password Strength Indicator */}
-            {password.length > 0 && (
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden mt-2">
-                <div
-                  className={`h-full transition-all duration-500 ${passwordStrength <= 20 ? 'bg-red-500 w-[20%]' :
-                    passwordStrength <= 40 ? 'bg-orange-500 w-[40%]' :
-                      passwordStrength <= 60 ? 'bg-yellow-500 w-[60%]' :
-                        passwordStrength <= 80 ? 'bg-emerald-400 w-[80%]' :
-                          'bg-cyan-400 w-full'
-                    }`}
-                />
-              </div>
-            )}
-          </div>
+            {/* Form Inputs */}
+            <div className="space-y-6">
+              <div className="space-y-2 relative group">
+                {/* Dynamic Animated Border Effect */}
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <MagneticButton
-              onClick={handleProcess}
-              disabled={loading}
-              className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-5 px-6 rounded-2xl flex items-center justify-center gap-3 text-lg transition-colors disabled:opacity-50 disabled:pointer-events-none group shadow-[0_0_20px_rgba(99,102,241,0.3)] shadow-indigo-500/25 z-20"
-            >
-              {loading ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  {mode === 'encode' ? <Lock className="w-6 h-6" /> : <Unlock className="w-6 h-6" />}
-                  {mode === 'encode' ? 'Lock Now' : 'Unlock Now'}
-                  <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </MagneticButton>
-
-            <MagneticButton
-              onClick={handleClear}
-              className="p-5 bg-white/[0.03] hover:bg-white/10 border border-white/10 rounded-2xl text-gray-400 hover:text-white transition-colors flex items-center justify-center shadow-inner sm:w-16 z-20"
-            >
-              <Trash2 className="w-6 h-6" />
-              <span className="ml-2 sm:hidden font-semibold">Clear</span>
-            </MagneticButton>
-          </div>
-
-          {/* Live Verification Trust Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-2 select-none">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400/80 bg-emerald-400/10 px-2.5 py-1 rounded-full border border-emerald-400/20">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-              Local Process
-            </div>
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-300/80 bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              AES-256-GCM
-            </div>
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors bg-white/5 px-2.5 py-1 rounded-full border border-white/10 cursor-pointer">
-              <Github className="w-3.5 h-3.5" />
-              Open-Source
-            </a>
-          </div>
-        </div>
-          </div>
-        </GlassCard>
-      </div>
-
-      {/* Right Column: Output Section */}
-      <div className="w-full flex-1">
-        <AnimatePresence mode="popLayout">
-          {output ? (
-          <motion.div
-            initial={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, scale: 0.95, filter: 'blur(20px) brightness(2)', transition: { duration: 0.3 } }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="w-full max-w-2xl overflow-hidden origin-top"
-          >
-            <div className="bg-black/60 border border-indigo-500/20 rounded-3xl p-2 backdrop-blur-2xl shadow-[0_0_50px_rgba(99,102,241,0.15)] mt-2 relative overflow-hidden group">
-              {/* Inner edge highlight */}
-              <div className="absolute inset-0 rounded-3xl border border-white/5 pointer-events-none" />
-
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-5 py-4 border-b border-white/5 gap-4 sm:gap-0">
-                <span className="text-xs sm:text-sm font-semibold text-indigo-300 tracking-widest uppercase">
-                  {mode === 'encode' ? 'Locked Secret Code' : 'Unlocked Message'}
-                </span>
-
-                {/* Desktop Actions */}
-                <div className="hidden sm:flex flex-wrap gap-2 relative z-10">
-                  <button
-                    onClick={() => setShowQR(!showQR)}
-                    className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5"
-                    title="Show QR Code"
-                  >
-                    <QrCode className="w-3.5 h-3.5" />
-                    <span>QR</span>
-                  </button>
-                  <button
-                    onClick={downloadTxtFile}
-                    className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5"
-                    title="Download TXT"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>TXT</span>
-                  </button>
-                  <button
-                    onClick={copyToClipboard}
-                    className="flex items-center gap-2 text-xs font-medium text-white transition-colors bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30 px-3 py-1.5 rounded-md shadow-lg"
-                    title="Copy to clipboard"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy</span>
-                  </button>
-                </div>
-
-                {/* Mobile Actions Menu Toggle */}
-                <div className="sm:hidden absolute top-3 right-3 z-10">
-                  <button
-                    onClick={() => setMobileMenuOpen(true)}
-                    className="p-2 text-gray-400 hover:text-white bg-white/5 rounded-full border border-white/10"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {showQR && (
-                <div className="p-4 sm:p-6 border-b border-white/5 flex flex-col items-center justify-center bg-black/40">
-                  <div className="bg-white p-3 sm:p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                    <QRCodeSVG value={output} size={200} level="M" includeMargin={false} className="w-40 h-40 sm:w-50 sm:h-50" />
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-semibold text-indigo-200 ml-1 block relative z-10 hover:text-indigo-100 transition-colors">
+                    {mode === 'encode' ? 'Your Message or File' : 'Scrambled Secret Code'}
+                  </label>
+                  <div className="relative z-10">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-indigo-300 hover:text-white bg-indigo-500/20 hover:bg-indigo-500/40 px-3 py-1.5 rounded-full border border-indigo-500/30 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      title="Upload Image/File"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Upload File</span>
+                      <span className="sm:hidden">Upload</span>
+                    </button>
                   </div>
-                  <p className="mt-4 text-xs font-medium text-indigo-300/70 tracking-wide uppercase text-center">Scan to extract payload</p>
                 </div>
-              )}
 
-              <div className="p-4 sm:p-6 relative max-w-full">
-                <p className="font-mono text-xs sm:text-sm md:text-base text-gray-300 break-all select-all leading-relaxed max-h-60 overflow-y-auto w-full custom-scrollbar">
-                  {displayedOutput}
-                </p>
+                <div className="relative w-full z-10">
+                  <AnimatePresence mode="popLayout">
+                    {mode === 'encode' && !text && !isDragging && !hasInteracted && !isFocused && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-[3px] pointer-events-none z-20 flex items-start justify-start p-5 overflow-hidden"
+                      >
+                        <span className="text-gray-500/50 font-mono text-base sm:text-lg select-none filter blur-[2px]">
+                          My secret bank pin is 8492. Do not share...
+                        </span>
+                      </motion.div>
+                    )}
+                    {mode === 'encode' && !text && !isDragging && (hasInteracted || isFocused) && (
+                      <motion.span
+                        key={placeholderIdx}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        transition={{ duration: 0.3 }}
+                        className="absolute left-[21px] top-[21px] text-gray-500 pointer-events-none text-base sm:text-lg font-mono"
+                      >
+                        {encodePlaceholders[placeholderIdx]}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  <textarea
+                    value={text.startsWith('[STEGO_CARRIER]') ? "Image loaded. Ready to embed hidden data." : text}
+                    onChange={handleTextChange}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    placeholder={mode === 'decode' ? "Paste the locked message code or drop an image..." : ""}
+                    className={`w-full h-36 relative ${isDragging ? 'bg-indigo-500/10 border-indigo-400 scale-[1.02]' : 'bg-black/80 border-white/10'} border-2 border-dashed sm:border-solid sm:border rounded-2xl p-5 text-base sm:text-lg ${text.startsWith('[STEGO_CARRIER]') ? 'text-indigo-400 font-bold' : 'text-white'} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] font-mono resize-none transition-all leading-relaxed backdrop-blur-md z-10`}
+                  />
+                </div>
+                {isDragging && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-6">
+                    <div className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-full shadow-2xl drop-shadow-[0_0_15px_rgba(79,70,229,0.5)]">
+                      Drop into Vault
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Cryptographic Telemetry Stats */}
-              <div className="px-5 py-3 border-t border-white/5 bg-black/40 flex flex-wrap items-center justify-between text-[10px] sm:text-xs text-indigo-400/60 font-mono uppercase tracking-widest gap-2">
-                <div className="flex items-center gap-4">
-                  <span>⏱️ Time: <span className="text-white/80 font-bold">{cryptoTime}ms</span></span>
-                  <span className="hidden sm:inline">|</span>
-                  <span>🔒 Algo: <span className="text-white/80 font-bold">AES-GCM (256-bit)</span></span>
-                  <span className="hidden md:inline">|</span>
-                  <span className="hidden md:inline">🔄 Derivation: <span className="text-white/80 font-bold">PBKDF2 (100k)</span></span>
+              <div className="space-y-2 relative">
+                {/* Ambient Aura overlay for keystrokes */}
+                <div id="password-input-aura" className="absolute inset-0 rounded-2xl pointer-events-none z-20 opacity-0" />
+
+                <label className="text-sm font-semibold text-indigo-200 ml-1 block">Secret Key (Password)</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={handlePasswordChange}
+                  placeholder="Enter a strong password..."
+                  className="w-full relative z-10 bg-black/80 border border-white/10 rounded-2xl p-5 text-base sm:text-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] transition-all font-mono tracking-wider"
+                />
+                {/* Password Strength Indicator */}
+                {password.length > 0 && (
+                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden mt-2">
+                    <div
+                      className={`h-full transition-all duration-500 ${passwordStrength <= 20 ? 'bg-red-500 w-[20%]' :
+                        passwordStrength <= 40 ? 'bg-orange-500 w-[40%]' :
+                          passwordStrength <= 60 ? 'bg-yellow-500 w-[60%]' :
+                            passwordStrength <= 80 ? 'bg-emerald-400 w-[80%]' :
+                              'bg-cyan-400 w-full'
+                        }`}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <MagneticButton
+                  onClick={handleProcess}
+                  disabled={loading}
+                  className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-5 px-6 rounded-2xl flex items-center justify-center gap-3 text-lg transition-colors disabled:opacity-50 disabled:pointer-events-none group shadow-[0_0_20px_rgba(99,102,241,0.3)] shadow-indigo-500/25 z-20"
+                >
+                  {loading ? (
+                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      {mode === 'encode' ? <Lock className="w-6 h-6" /> : <Unlock className="w-6 h-6" />}
+                      {mode === 'encode' ? 'Lock Now' : 'Unlock Now'}
+                      <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </MagneticButton>
+
+                <MagneticButton
+                  onClick={handleClear}
+                  className="p-5 bg-white/[0.03] hover:bg-white/10 border border-white/10 rounded-2xl text-gray-400 hover:text-white transition-colors flex items-center justify-center shadow-inner sm:w-16 z-20"
+                >
+                  <Trash2 className="w-6 h-6" />
+                  <span className="ml-2 sm:hidden font-semibold">Clear</span>
+                </MagneticButton>
+              </div>
+
+              {/* Live Verification Trust Badges */}
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-2 select-none">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400/80 bg-emerald-400/10 px-2.5 py-1 rounded-full border border-emerald-400/20">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                  Local Process
                 </div>
-                <div>Status: <span className="text-emerald-400 font-bold">SECURED</span></div>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-300/80 bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  AES-256-GCM
+                </div>
+                <a href="https://github.com" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors bg-white/5 px-2.5 py-1 rounded-full border border-white/10 cursor-pointer">
+                  <Github className="w-3.5 h-3.5" />
+                  Open-Source
+                </a>
               </div>
             </div>
-          </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="hidden lg:flex flex-col items-center justify-center h-full min-h-[400px] border border-white/5 rounded-3xl bg-white/[0.01] text-gray-500"
-            >
-              <Lock className="w-12 h-12 mb-4 opacity-20" />
-              <p className="font-mono text-sm uppercase tracking-widest text-center">Output Area</p>
-              <p className="text-xs mt-2 opacity-50">Locked or unlocked data will appear here.</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          </GlassCard>
+        </div>
+
+        {/* Right Column: Output Section */}
+        <div className="w-full flex-1">
+          <AnimatePresence mode="popLayout">
+            {output ? (
+              <motion.div
+                initial={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, scale: 0.95, filter: 'blur(20px) brightness(2)', transition: { duration: 0.3 } }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="w-full max-w-2xl overflow-hidden origin-top"
+              >
+                <div className="bg-black/60 border border-indigo-500/20 rounded-3xl p-2 backdrop-blur-2xl shadow-[0_0_50px_rgba(99,102,241,0.15)] mt-2 relative overflow-hidden group">
+                  {/* Inner edge highlight */}
+                  <div className="absolute inset-0 rounded-3xl border border-white/5 pointer-events-none" />
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-5 py-4 border-b border-white/5 gap-4 sm:gap-0">
+                    <span className="text-xs sm:text-sm font-semibold text-indigo-300 tracking-widest uppercase">
+                      {mode === 'encode' ? 'Locked Secret Code' : 'Unlocked Message'}
+                    </span>
+
+                    {/* Desktop Actions */}
+                    <div className="hidden sm:flex flex-wrap gap-2 relative z-10">
+                      <button
+                        onClick={() => setShowQR(!showQR)}
+                        className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5"
+                        title="Show QR Code"
+                      >
+                        <QrCode className="w-3.5 h-3.5" />
+                        <span>QR</span>
+                      </button>
+                      <button
+                        onClick={downloadTxtFile}
+                        className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5"
+                        title="Download TXT"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>TXT</span>
+                      </button>
+                      <button
+                        onClick={copyToClipboard}
+                        className="flex items-center gap-2 text-xs font-medium text-white transition-colors bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30 px-3 py-1.5 rounded-md shadow-lg"
+                        title="Copy to clipboard"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy</span>
+                      </button>
+                    </div>
+
+                    {/* Mobile Actions Menu Toggle */}
+                    <div className="sm:hidden absolute top-3 right-3 z-10">
+                      <button
+                        onClick={() => setMobileMenuOpen(true)}
+                        className="p-2 text-gray-400 hover:text-white bg-white/5 rounded-full border border-white/10"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {showQR && (
+                    <div className="p-4 sm:p-6 border-b border-white/5 flex flex-col items-center justify-center bg-black/40">
+                      <div className="bg-white p-3 sm:p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                        <QRCodeSVG value={output} size={200} level="M" includeMargin={false} className="w-40 h-40 sm:w-50 sm:h-50" />
+                      </div>
+                      <p className="mt-4 text-xs font-medium text-indigo-300/70 tracking-wide uppercase text-center">Scan to extract payload</p>
+                    </div>
+                  )}
+
+                  <div className="p-4 sm:p-6 relative max-w-full">
+                    <p className="font-mono text-xs sm:text-sm md:text-base text-gray-300 break-all select-all leading-relaxed max-h-60 overflow-y-auto w-full custom-scrollbar">
+                      {displayedOutput}
+                    </p>
+                  </div>
+
+                  {/* Cryptographic Telemetry Stats */}
+                  <div className="px-5 py-3 border-t border-white/5 bg-black/40 flex flex-wrap items-center justify-between text-[10px] sm:text-xs text-indigo-400/60 font-mono uppercase tracking-widest gap-2">
+                    <div className="flex items-center gap-4">
+                      <span>⏱️ Time: <span className="text-white/80 font-bold">{cryptoTime}ms</span></span>
+                      <span className="hidden sm:inline">|</span>
+                      <span>🔒 Algo: <span className="text-white/80 font-bold">AES-GCM (256-bit)</span></span>
+                      <span className="hidden md:inline">|</span>
+                      <span className="hidden md:inline">🔄 Derivation: <span className="text-white/80 font-bold">PBKDF2 (100k)</span></span>
+                    </div>
+                    <div>Status: <span className="text-emerald-400 font-bold">SECURED</span></div>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="hidden lg:flex flex-col items-center justify-center h-full min-h-[400px] border border-white/5 rounded-3xl bg-white/[0.01] text-gray-500"
+              >
+                <Lock className="w-12 h-12 mb-4 opacity-20" />
+                <p className="font-mono text-sm uppercase tracking-widest text-center">Output Area</p>
+                <p className="text-xs mt-2 opacity-50">Locked or unlocked data will appear here.</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-    </div>
 
       {/* Simple How It Works Section */}
       <motion.div
@@ -748,7 +747,7 @@ export default function Home() {
                 <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4 shadow-lg shadow-indigo-500/10">
                   <ImageIcon className="w-6 h-6" />
                 </div>
-                
+
                 <div>
                   <h3 className="text-2xl font-bold text-white tracking-tight mb-2">Weaponize Image</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">
@@ -763,7 +762,7 @@ export default function Home() {
                     placeholder="Enter top-secret payload..."
                     className="w-full h-32 bg-black/80 border border-white/10 rounded-2xl p-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] font-mono resize-none transition-all leading-relaxed"
                   />
-                  
+
                   <MagneticButton
                     onClick={executeSteganography}
                     className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-2 text-lg transition-colors shadow-lg shadow-indigo-500/25 z-20"
@@ -797,9 +796,9 @@ export default function Home() {
               className="w-full bg-[#09090b] border-t border-white/10 rounded-t-3xl p-6 relative z-10 pb-10"
             >
               <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />
-              
+
               <h3 className="text-lg font-bold text-white mb-6">Actions</h3>
-              
+
               <div className="flex flex-col gap-3">
                 <button
                   onClick={copyToClipboard}
@@ -808,7 +807,7 @@ export default function Home() {
                   <Copy className="w-5 h-5 text-indigo-400" />
                   <span className="font-semibold text-lg">Copy to Clipboard</span>
                 </button>
-                
+
                 <button
                   onClick={() => { setShowQR(!showQR); setMobileMenuOpen(false); }}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 text-gray-200 border border-white/10"
@@ -816,7 +815,7 @@ export default function Home() {
                   <QrCode className="w-5 h-5 text-gray-400" />
                   <span className="font-semibold text-lg">Generate QR Code</span>
                 </button>
-                
+
                 <button
                   onClick={() => { downloadTxtFile(); setMobileMenuOpen(false); }}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 text-gray-200 border border-white/10"

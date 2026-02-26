@@ -1,0 +1,20 @@
+﻿app/page.tsx(411,12): error TS17008: JSX element 'GlassCard' has no corresponding closing tag.
+app/page.tsx(582,11): error TS17002: Expected corresponding JSX closing tag for 'div'.
+app/page.tsx(583,9): error TS17002: Expected corresponding JSX closing tag for 'motion.div'.
+app/page.tsx(585,7): error TS1005: ')' expected.
+app/page.tsx(686,5): error TS1128: Declaration or statement expected.
+app/page.tsx(690,18): error TS1136: Property assignment expected.
+app/page.tsx(690,33): error TS1005: ';' expected.
+app/page.tsx(691,18): error TS1136: Property assignment expected.
+app/page.tsx(691,33): error TS1005: ';' expected.
+app/page.tsx(691,38): error TS1128: Declaration or statement expected.
+app/page.tsx(692,21): error TS1136: Property assignment expected.
+app/page.tsx(692,43): error TS1005: ';' expected.
+app/page.tsx(692,50): error TS1128: Declaration or statement expected.
+app/page.tsx(695,9): error TS2657: JSX expressions must have one parent element.
+app/page.tsx(719,7): error TS1128: Declaration or statement expected.
+app/page.tsx(779,7): error TS1128: Declaration or statement expected.
+app/page.tsx(831,7): error TS1128: Declaration or statement expected.
+app/page.tsx(832,5): error TS1109: Expression expected.
+app/page.tsx(833,3): error TS1109: Expression expected.
+app/page.tsx(834,1): error TS1128: Declaration or statement expected.
