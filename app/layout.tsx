@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
-import { Outfit } from 'next/font/google';
+import { Outfit, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Analytics } from '@vercel/analytics/next';
+import { Toaster } from 'sonner';
 
-const outfit = Outfit({ subsets: ['latin'] });
+const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
 
 export const metadata: Metadata = {
   title: 'Phantom | Secure & Invisible Communication',
@@ -18,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${outfit.className} min-h-screen bg-[#09090b] text-white selection:bg-indigo-500/30 overflow-x-hidden flex flex-col`}>
+      <body className={`${outfit.variable} ${jetbrainsMono.variable} font-sans min-h-screen bg-black text-white selection:bg-indigo-500/50 overflow-x-hidden flex flex-col`}>
         {/* Background Effects */}
         <div className="fixed inset-0 z-[-1] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))]"></div>
         <div className="fixed bottom-0 right-0 w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none z-[-2]"></div>
@@ -34,6 +36,7 @@ export default function RootLayout({
           </div>
         </main>
 
+        <Toaster theme="dark" position="bottom-center" toastOptions={{ className: 'font-sans' }} />
         <Analytics />
       </body>
     </html>

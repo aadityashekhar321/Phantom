@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { GlassCard } from '@/components/GlassCard';
-import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2 } from 'lucide-react';
+import { MagneticButton } from '@/components/MagneticButton';
+import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import { extractTextFromImage, hideTextInImage } from '@/lib/stego';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
@@ -20,12 +22,68 @@ export default function Home() {
   const [text, setText] = useState('');
   const [password, setPassword] = useState('');
   const [output, setOutput] = useState('');
+  const [displayedOutput, setDisplayedOutput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [showQR, setShowQR] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  const [stegoModalOpen, setStegoModalOpen] = useState(false);
+  const [stegoPayload, setStegoPayload] = useState('');
+  const [stegoCarrier, setStegoCarrier] = useState('');
+
+  const encodePlaceholders = ["Enter your secret...", "Drop a top-secret file...", "Drop an image to hide data..."];
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+
+  useEffect(() => {
+    if (mode === 'decode') return;
+    const interval = setInterval(() => {
+      setPlaceholderIdx((prev) => (prev + 1) % encodePlaceholders.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [mode]);
+
+  useEffect(() => {
+    if (!output) {
+      setDisplayedOutput('');
+      return;
+    }
+
+    // Matrix Scramble Reveal Effect
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    let iteration = 0;
+    const maxIterations = 15;
+    const duration = 600; // ms
+    const intervalTime = duration / maxIterations;
+
+    const targetText = output;
+    
+    // Performance optimization: Don't scramble massive files
+    if (targetText.length > 500) {
+      setDisplayedOutput(targetText);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setDisplayedOutput(
+        targetText
+          .split('')
+          .map((char, index) => {
+            if (index < (iteration / maxIterations) * targetText.length) {
+              return targetText[index];
+            }
+            if (char === ' ' || char === '\n') return char;
+            return chars[Math.floor(Math.random() * chars.length)];
+          })
+          .join('')
+      );
+
+      if (iteration >= maxIterations) {
+        clearInterval(interval);
+        setDisplayedOutput(targetText);
+      }
+      
+      iteration += 1;
+    }, intervalTime);
+
+    return () => clearInterval(interval);
+  }, [output]);
 
   // Auto-detect Ciphertext
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -34,8 +92,7 @@ export default function Home() {
 
     if (mode === 'encode' && val.trim().startsWith('--- PHANTOM SECURE BLOCK')) {
       setMode('decode');
-      setSuccess('Locked message detected. Switched to Decode mode.');
-      setTimeout(() => setSuccess(''), 3000);
+      toast.success('Locked message detected. Switched to Decode mode.');
     }
   };
 
@@ -56,46 +113,47 @@ export default function Home() {
 
   const handleProcess = async () => {
     if (!password) {
-      setError('A password is required.');
+      toast.error('A password is required.');
       return;
     }
 
     if (!text && !text.startsWith('[STEGO_CARRIER]')) {
-      setError('Please provide data to lock.');
+      toast.error('Please provide data to lock.');
       return;
     }
 
+    if (mode === 'encode' && text.startsWith('[STEGO_CARRIER]\n')) {
+      setStegoCarrier(text.replace('[STEGO_CARRIER]\n', ''));
+      setStegoPayload('');
+      setStegoModalOpen(true);
+      return;
+    }
+
+    await executeProcessing(text);
+  };
+
+  const executeSteganography = async () => {
+    if (!stegoPayload) {
+      toast.error("Please enter a secret message.");
+      return;
+    }
+    setStegoModalOpen(false);
+    await executeProcessing(stegoPayload, true);
+  };
+
+  const executeProcessing = async (payloadData: string, isStego = false) => {
     setLoading(true);
-    setError('');
-    setSuccess('');
     setOutput('');
     setShowQR(false);
 
     try {
       if (mode === 'encode') {
-        let payloadData = text;
-        let isStego = false;
-        let carrierSrc = '';
-
-        // Handle Steganography encoding
-        if (text.startsWith('[STEGO_CARRIER]\n')) {
-          isStego = true;
-          carrierSrc = text.replace('[STEGO_CARRIER]\n', '');
-          const userSecret = window.prompt("Image carrier loaded. What secret message or data do you want to hide inside this image?");
-          if (!userSecret) {
-            setLoading(false);
-            return; // User cancelled
-          }
-          payloadData = userSecret;
-        }
-
         const result = await processCryptoAsync('encode', payloadData, password);
 
         if (isStego) {
-          setSuccess('Encrypting payload and injecting it into image pixels...');
-          const stegoImage = await hideTextInImage(result, carrierSrc);
+          toast.info('Injecting encrypted payload into image pixels...');
+          const stegoImage = await hideTextInImage(result, stegoCarrier);
 
-          // Auto-download the new weaponized image
           const link = document.createElement('a');
           link.href = stegoImage;
           link.download = `phantom_stego_${Date.now()}.png`;
@@ -104,15 +162,16 @@ export default function Home() {
           document.body.removeChild(link);
 
           setOutput("Steganography Successful. The encrypted payload is now hidden entirely within the pixels of the downloaded PNG image.\n\nTo decrypt, drag and drop the image back into the Phantom Vault.");
-          setSuccess('Image successfully weaponized.');
+          toast.success('Image successfully weaponized.');
+          setText('');
+          setStegoCarrier('');
         } else {
           setOutput(result);
-          setSuccess('Message locked successfully.');
+          toast.success('Message locked successfully.');
         }
       } else {
-        const result = await processCryptoAsync('decode', text, password);
+        const result = await processCryptoAsync('decode', payloadData, password);
 
-        // Check if the decrypted payload is actually a Phantom Vault File
         if (result.startsWith('[PHANTOM_FILE:')) {
           const endOfMetadata = result.indexOf(']\n');
           if (endOfMetadata !== -1) {
@@ -120,7 +179,6 @@ export default function Home() {
             const [, filename] = metadata.split(':');
             const base64Data = result.substring(endOfMetadata + 2);
 
-            // Trigger auto-download of the extracted file
             const link = document.createElement('a');
             link.href = base64Data;
             link.download = filename || `phantom_decrypted_${Date.now()}`;
@@ -129,18 +187,18 @@ export default function Home() {
             document.body.removeChild(link);
 
             setOutput(`Successfully decrypted and downloaded file:\n${filename}`);
-            setSuccess('File extracted from Vault successfully.');
+            toast.success('File extracted from Vault successfully.');
             setLoading(false);
             return;
           }
         }
 
         setOutput(result);
-        setSuccess('Message unlocked successfully.');
+        toast.success('Message unlocked successfully.');
       }
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : 'An error occurred during processing.');
+      toast.error(err instanceof Error ? err.message : 'An error occurred during processing.');
     } finally {
       setLoading(false);
     }
@@ -149,16 +207,13 @@ export default function Home() {
   const copyToClipboard = () => {
     if (!output) return;
     navigator.clipboard.writeText(output);
-    setSuccess('Copied to clipboard!');
-    setTimeout(() => setSuccess(''), 2000);
+    toast.success('Copied to clipboard!');
   };
 
   const handleClear = () => {
     setText('');
     setPassword('');
     setOutput('');
-    setError('');
-    setSuccess('');
     setShowQR(false);
   };
 
@@ -171,8 +226,7 @@ export default function Home() {
     document.body.appendChild(element); // Required for this to work in FireFox
     element.click();
     document.body.removeChild(element);
-    setSuccess('File downloaded!');
-    setTimeout(() => setSuccess(''), 2000);
+    toast.success('File downloaded!');
   };
 
   // --- File Drop Handlers for Phantom Vault ---
@@ -195,14 +249,12 @@ export default function Home() {
 
       // Prevent massive files from crashing browser RAM
       if (file.size > 5 * 1024 * 1024) {
-        setError('File too large. Please keep Vault uploads under 5MB.');
+        toast.error('File too large. Please keep Vault uploads under 5MB.');
         return;
       }
 
       setMode('encode');
       setLoading(true);
-      setError('');
-      setSuccess(`Processing ${file.name}...`);
 
       try {
         const reader = new FileReader();
@@ -217,7 +269,7 @@ export default function Home() {
                 if (secret && secret.startsWith('--- PHANTOM SECURE BLOCK')) {
                   setText(secret);
                   setMode('decode');
-                  setSuccess('Hidden message found inside image! Set to Decode.');
+                  toast.success('Hidden message found inside image! Set to Decode.');
                   setLoading(false);
                   return;
                 }
@@ -225,7 +277,7 @@ export default function Home() {
                 // Not a stego image, meaning they want to hide data IN it later.
                 // We'll place the dataURL in state with a special tag.
                 setText(`[STEGO_CARRIER]\n${event.target.result}`);
-                setSuccess('Carrier image ready. Enter text to hide inside it.');
+                toast.success('Carrier image ready. Lock message to proceed.');
                 setLoading(false);
               }
             }
@@ -236,19 +288,19 @@ export default function Home() {
             if (event.target?.result) {
               const fileData = `[PHANTOM_FILE:${file.name}:${file.type}]\n${event.target.result}`;
               setText(fileData);
-              setSuccess(`File loaded securely. Ready to lock.`);
+              toast.success(`File loaded securely. Ready to lock.`);
               setLoading(false);
             }
           };
         }
 
         reader.onerror = () => {
-          setError('Failed to read file.');
+          toast.error('Failed to read file.');
           setLoading(false);
         };
         reader.readAsDataURL(file);
       } catch {
-        setError('Error parsing file data.');
+        toast.error('Error parsing file data.');
         setLoading(false);
       }
     }
@@ -283,36 +335,55 @@ export default function Home() {
               }`}
           />
           <button
-            onClick={() => { setMode('encode'); setOutput(''); setError(''); setSuccess(''); }}
+            onClick={() => { setMode('encode'); setOutput(''); }}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full z-10 font-semibold transition-colors ${mode === 'encode' ? 'text-white' : 'text-gray-400 hover:text-white'
               }`}
           >
-            <Lock className="w-4 h-4" /> Lock Message
+            <Lock className="w-4 h-4" /> Lock
           </button>
           <button
-            onClick={() => { setMode('decode'); setOutput(''); setError(''); setSuccess(''); }}
+            onClick={() => { setMode('decode'); setOutput(''); }}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full z-10 font-semibold transition-colors ${mode === 'decode' ? 'text-white' : 'text-gray-400 hover:text-white'
               }`}
           >
-            <Unlock className="w-4 h-4" /> Unlock Message
+            <Unlock className="w-4 h-4" /> Unlock
           </button>
         </div>
 
         {/* Form Inputs */}
         <div className="space-y-6">
-          <div className="space-y-2 relative">
-            <label className="text-sm font-semibold text-indigo-200 ml-1 block">
+          <div className="space-y-2 relative group">
+            {/* Dynamic Animated Border Effect */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-1000 group-hover:duration-200"></div>
+            
+            <label className="text-sm font-semibold text-indigo-200 ml-1 block relative z-10 hover:text-indigo-100 transition-colors">
               {mode === 'encode' ? 'Your Message or File (Drag & Drop)' : 'Scrambled Secret Code'}
             </label>
-            <textarea
-              value={text.startsWith('[STEGO_CARRIER]') ? "Image loaded. Ready to embed hidden data." : text}
-              onChange={handleTextChange}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              placeholder={mode === 'encode' ? "Type a message OR drop a secure file/image here..." : "Paste the locked message code or drop an image here..."}
-              className={`w-full h-36 ${isDragging ? 'bg-indigo-500/10 border-indigo-400 scale-[1.02]' : 'bg-white/[0.02] border-white/10'} border-2 border-dashed sm:border-solid sm:border rounded-2xl p-5 text-base sm:text-lg ${text.startsWith('[STEGO_CARRIER]') ? 'text-indigo-400 font-bold' : 'text-white'} placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] resize-none transition-all leading-relaxed`}
-            />
+            <div className="relative w-full z-10">
+              <AnimatePresence mode="popLayout">
+                {mode === 'encode' && !text && !isDragging && (
+                  <motion.span
+                    key={placeholderIdx}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute left-[21px] top-[21px] text-gray-500 pointer-events-none text-base sm:text-lg font-mono"
+                  >
+                    {encodePlaceholders[placeholderIdx]}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+              <textarea
+                value={text.startsWith('[STEGO_CARRIER]') ? "Image loaded. Ready to embed hidden data." : text}
+                onChange={handleTextChange}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                placeholder={mode === 'decode' ? "Paste the locked message code or drop an image..." : ""}
+                className={`w-full h-36 relative ${isDragging ? 'bg-indigo-500/10 border-indigo-400 scale-[1.02]' : 'bg-black/80 border-white/10'} border-2 border-dashed sm:border-solid sm:border rounded-2xl p-5 text-base sm:text-lg ${text.startsWith('[STEGO_CARRIER]') ? 'text-indigo-400 font-bold' : 'text-white'} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] font-mono resize-none transition-all leading-relaxed backdrop-blur-md z-10`}
+              />
+            </div>
             {isDragging && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-6">
                 <div className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-full shadow-2xl drop-shadow-[0_0_15px_rgba(79,70,229,0.5)]">
@@ -329,7 +400,7 @@ export default function Home() {
               value={password}
               onChange={handlePasswordChange}
               placeholder="Enter a strong password..."
-              className="w-full bg-white/[0.02] border border-white/10 rounded-2xl p-5 text-base sm:text-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] transition-all font-mono tracking-wider"
+              className="w-full bg-black/80 border border-white/10 rounded-2xl p-5 text-base sm:text-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] transition-all font-mono tracking-wider"
             />
             {/* Password Strength Indicator */}
             {password.length > 0 && (
@@ -346,18 +417,12 @@ export default function Home() {
             )}
           </div>
 
-          {/* Error & Success Messages */}
-          {error && <div className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 p-3 rounded-lg">{error}</div>}
-          {success && <div className="text-emerald-400 text-sm bg-emerald-400/10 border border-emerald-400/20 p-3 rounded-lg">{success}</div>}
-
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-6">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.95 }}
+          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <MagneticButton
               onClick={handleProcess}
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-5 px-6 rounded-2xl flex items-center justify-center gap-3 text-lg transition-colors disabled:opacity-50 disabled:pointer-events-none group shadow-xl shadow-indigo-500/25"
+              className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-5 px-6 rounded-2xl flex items-center justify-center gap-3 text-lg transition-colors disabled:opacity-50 disabled:pointer-events-none group shadow-[0_0_20px_rgba(99,102,241,0.3)] shadow-indigo-500/25 z-20"
             >
               {loading ? (
                 <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -368,18 +433,15 @@ export default function Home() {
                   <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
-            </motion.button>
+            </MagneticButton>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <MagneticButton
               onClick={handleClear}
-              className="p-5 bg-white/[0.03] hover:bg-white/10 border border-white/10 rounded-2xl text-gray-400 hover:text-white transition-colors flex items-center justify-center shadow-inner sm:w-16"
-              title="Clear all"
+              className="p-5 bg-white/[0.03] hover:bg-white/10 border border-white/10 rounded-2xl text-gray-400 hover:text-white transition-colors flex items-center justify-center shadow-inner sm:w-16 z-20"
             >
               <Trash2 className="w-6 h-6" />
               <span className="ml-2 sm:hidden font-semibold">Clear</span>
-            </motion.button>
+            </MagneticButton>
           </div>
         </div>
       </GlassCard>
@@ -441,7 +503,7 @@ export default function Home() {
 
               <div className="p-4 sm:p-6 relative max-w-full">
                 <p className="font-mono text-xs sm:text-sm md:text-base text-gray-300 break-all select-all leading-relaxed max-h-60 overflow-y-auto w-full custom-scrollbar">
-                  {output}
+                  {displayedOutput}
                 </p>
               </div>
             </div>
@@ -481,6 +543,66 @@ export default function Home() {
           </div>
         </div>
       </motion.div>
+
+      {/* Steganography Weaponize Modal */}
+      <AnimatePresence>
+        {stegoModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setStegoModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg bg-[#050510] border border-indigo-500/30 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(99,102,241,0.2)] overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 p-4">
+                <button
+                  onClick={() => setStegoModalOpen(false)}
+                  className="text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 p-2 rounded-full"
+                >
+                  <CloseIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-6 pt-2">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4 shadow-lg shadow-indigo-500/10">
+                  <ImageIcon className="w-6 h-6" />
+                </div>
+                
+                <div>
+                  <h3 className="text-2xl font-bold text-white tracking-tight mb-2">Weaponize Image</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    Carrier image loaded successfully. What secret message or payload would you like to encrypt and hide inside its pixels?
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <textarea
+                    value={stegoPayload}
+                    onChange={(e) => setStegoPayload(e.target.value)}
+                    placeholder="Enter top-secret payload..."
+                    className="w-full h-32 bg-black/80 border border-white/10 rounded-2xl p-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] font-mono resize-none transition-all leading-relaxed"
+                  />
+                  
+                  <MagneticButton
+                    onClick={executeSteganography}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-2 text-lg transition-colors shadow-lg shadow-indigo-500/25 z-20"
+                  >
+                    <Lock className="w-5 h-5" />
+                    Inject & Download
+                  </MagneticButton>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
