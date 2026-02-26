@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { GlassCard } from '@/components/GlassCard';
 import { MagneticButton } from '@/components/MagneticButton';
@@ -21,9 +21,11 @@ export default function Home() {
   const [mode, setMode] = useState<'encode' | 'decode'>('encode');
   const [text, setText] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState(0);
   const [output, setOutput] = useState('');
   const [displayedOutput, setDisplayedOutput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [stegoModalOpen, setStegoModalOpen] = useState(false);
   const [stegoPayload, setStegoPayload] = useState('');
   const [stegoCarrier, setStegoCarrier] = useState('');
@@ -31,7 +33,7 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // File Upload Ref
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Telemetry Stats
   const [cryptoTime, setCryptoTime] = useState(0);
