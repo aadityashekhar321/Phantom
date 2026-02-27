@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { GlassCard } from '@/components/GlassCard';
 import { MagneticButton } from '@/components/MagneticButton';
-import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb } from 'lucide-react';
+import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { extractTextFromImage, hideTextInImage } from '@/lib/stego';
 import jsQR from 'jsqr';
@@ -992,6 +992,77 @@ export default function Home() {
           </div>
         </div>
       </motion.div>
+
+      {/* NEW: Dual Image Encryption Section (Migrated from How It Works) */}
+      <div className="text-center space-y-6 pt-16 sm:pt-20 px-4 w-full max-w-4xl">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white flex justify-center items-center gap-3 tracking-tight">
+          <ImageIcon className="text-indigo-400 w-8 h-8" />
+          Advanced Image Handling
+        </h2>
+        <p className="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto">
+          Phantom features a powerful Dual Image Encryption Engine. When you upload an image to the Vault, you control exactly how it is secured.
+        </p>
+      </div>
+
+      <GlassCard className="w-full max-w-4xl mx-auto px-5 py-8 sm:px-10 sm:py-12 relative overflow-hidden mt-8">
+        <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none text-white">
+          <ShieldCheck className="w-48 h-48" />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+          <div className="bg-black/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-4 hover:border-indigo-500/30 transition-colors">
+            <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-white">1. Steganography</h3>
+            <p className="text-indigo-300 font-semibold text-sm uppercase tracking-wider">Hide Text Inside an Image</p>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Phantom injects your scrambled secret message directly into the pixel data of an innocent-looking picture.
+              The image looks 100% normal to the human eye, but acts as a carrier for your secret.
+            </p>
+          </div>
+
+          <div className="bg-black/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-4 hover:border-cyan-500/30 transition-colors">
+            <div className="w-12 h-12 bg-cyan-500/20 rounded-2xl flex items-center justify-center text-cyan-400">
+              <Lock className="w-6 h-6" />
+            </div>
+            <h3 className="text-xl font-bold text-white">2. Full Encryption</h3>
+            <p className="text-cyan-300 font-semibold text-sm uppercase tracking-wider">Lock the Image Itself</p>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Phantom converts the entire image file into a massive string of data and encrypts the whole thing using AES-256-GCM.
+              The picture is completely destroyed until the correct Secret Key reconstructs it on the other side.
+            </p>
+          </div>
+        </div>
+
+        {/* Feature Comparison Table */}
+        <div className="mt-12 overflow-x-auto bg-black/40 border border-white/10 rounded-2xl w-full">
+          <table className="w-full text-left border-collapse min-w-[600px]">
+            <thead>
+              <tr className="bg-white/5 border-b border-white/10">
+                <th className="p-4 text-sm font-semibold text-gray-300">Mode</th>
+                <th className="p-4 text-sm font-semibold text-gray-300 hidden sm:table-cell">How it Works</th>
+                <th className="p-4 text-sm font-semibold text-gray-300">Visual Output</th>
+                <th className="p-4 text-sm font-semibold text-gray-300 hidden md:table-cell">Best For</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/10 text-sm">
+              <tr className="hover:bg-white/[0.02] transition-colors">
+                <td className="p-4 font-semibold text-indigo-400">Steganography</td>
+                <td className="p-4 text-gray-400 hidden sm:table-cell">Hides text mathematically in pixel LSBs</td>
+                <td className="p-4 text-gray-300">Looks identical to original</td>
+                <td className="p-4 text-gray-400 hidden md:table-cell">Passing messages in plain sight</td>
+              </tr>
+              <tr className="hover:bg-white/[0.02] transition-colors">
+                <td className="p-4 font-semibold text-cyan-400">Full Encryption</td>
+                <td className="p-4 text-gray-400 hidden sm:table-cell">Scrambles the entire raw file into ciphertext</td>
+                <td className="p-4 text-gray-300">Unreadable text block (.txt)</td>
+                <td className="p-4 text-gray-400 hidden md:table-cell">Archiving or locking images completely</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </GlassCard>
 
       {/* QR Scanner Modal */}
       <AnimatePresence>

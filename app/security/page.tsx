@@ -4,7 +4,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useState } from 'react';
-import { ChevronDown, Lock, Key, Shield, FileDigit, ServerOff, Cpu, ArrowRight } from 'lucide-react';
+import { ChevronDown, Lock, Key, Shield, FileDigit, ServerOff, Cpu, ArrowRight, Users, Database, Briefcase, Github } from 'lucide-react';
 
 const faqs = [
     {
@@ -18,6 +18,18 @@ const faqs = [
     {
         question: "Are my files uploaded to a server for encryption?",
         answer: "No. 100% of the cryptographic lifting happens entirely within your device's RAM (Random Access Memory) using your browser's native Web Crypto API. Nothing is ever sent over the network."
+    },
+    {
+        question: "Why did my Steganography Image fail to decode?",
+        answer: "If you send a steganography image over WhatsApp, X (Twitter), Discord, or iMessage, those platforms aggressively compress the image to save space. This compression permanently destroys the hidden pixel data. You must send Carrier Images as 'Files' or via platforms that do not compress (like Signal, Telegram uncompressed, or email attachments)."
+    },
+    {
+        question: "How do I install Phantom as an app?",
+        answer: "Phantom is a Progressive Web App (PWA). On mobile Safari, tap 'Share' then 'Add to Home Screen'. On Android Chrome or Desktop Chrome/Edge, click the install icon in your URL address bar. Once installed, it works 100% completely offline."
+    },
+    {
+        question: "What is a .phantom Vault file?",
+        answer: "When you lock data, you can export it instantly as a .phantom file to store on a USB drive or local hard drive. To decode it, simply drag and drop the .phantom file into the home page and provide the password."
     }
 ];
 
@@ -48,8 +60,8 @@ export default function SecurityInfo() {
                         <Image src="/security.webp" alt="Phantom Security Illustration" fill className="rounded-3xl drop-shadow-[0_0_30px_rgba(248,113,113,0.3)] object-cover" priority />
                     </motion.div>
                 </div>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tighter text-red-400">Security Information</h1>
-                <p className="text-gray-400 text-base sm:text-lg">Understanding the cryptographic foundation of Phantom.</p>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tighter text-red-400">Architecture & Trust</h1>
+                <p className="text-gray-400 text-base sm:text-lg">The mathematical foundation and mission of Phantom.</p>
             </div>
 
             <GlassCard className="max-w-3xl mx-auto px-5 py-8 sm:px-10 sm:py-12">
@@ -222,6 +234,63 @@ export default function SecurityInfo() {
                                     </AnimatePresence>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+
+                    {/* NEW: Merged About Section (Mission & Use Cases) */}
+                    <div className="space-y-8 sm:space-y-10 pt-4 border-t border-white/10 mt-10">
+                        <div className="flex flex-col items-center text-center pb-8 pt-4">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-8 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-lg shadow-indigo-500/20 flex flex-col items-center justify-center">
+                                <span className="text-white font-bold text-xl leading-none">P</span>
+                                <span className="text-[10px] font-bold opacity-60 text-white mt-1 uppercase tracking-widest">v1.0</span>
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">The Phantom Mission</h2>
+                            <p className="text-gray-300 text-lg sm:text-xl font-medium leading-relaxed max-w-2xl">
+                                We believe that total privacy shouldn&apos;t require a computer science degree.
+                            </p>
+                            <p className="text-gray-400 text-base leading-relaxed mt-4 max-w-2xl mx-auto">
+                                Phantom was built to give anyone the ability to send messages that are mathematically impossible to intercept.
+                                Privacy is a fundamental human right. We don&apos;t ask for data, we don&apos;t show ads, and we never see your messages.
+                            </p>
+                        </div>
+
+                        <div className="pt-4">
+                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-8 border-b border-white/10 pb-6">Built For Absolute Privacy</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                                <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 space-y-3 hover:border-white/10 transition-colors">
+                                    <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400 mb-2">
+                                        <Users className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white">Journalists</h3>
+                                    <p className="text-sm text-gray-400 leading-relaxed">Protecting anonymous sources and transmitting sensitive data without leaving digital footprints.</p>
+                                </div>
+                                <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 space-y-3 hover:border-white/10 transition-colors">
+                                    <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 mb-2">
+                                        <Database className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white">Personal Archival</h3>
+                                    <p className="text-sm text-gray-400 leading-relaxed">Encrypting crypto seed phrases or private passwords offline before uploading them to cloud storage.</p>
+                                </div>
+                                <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 space-y-3 hover:border-white/10 transition-colors">
+                                    <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-400 mb-2">
+                                        <Briefcase className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white">IP Protection</h3>
+                                    <p className="text-sm text-gray-400 leading-relaxed">Sharing proprietary code, trade secrets, or unreleased assets securely with business partners.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Open Source Action */}
+                        <div className="pt-8 border-t border-white/10 mt-10 text-center">
+                            <a
+                                href="https://github.com/aadityashekhar321/Phantom"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors font-medium text-gray-300 hover:text-white"
+                            >
+                                <Github className="w-5 h-5" /> View Open Source Engine on GitHub
+                            </a>
                         </div>
                     </div>
                 </div>

@@ -25,10 +25,8 @@ export function Navbar() {
     const closeMenu = () => setIsOpen(false);
 
     const navLinks = [
-        { href: '/', label: 'Encode/Decode' },
-        { href: '/how-it-works', label: 'How It Works' },
-        { href: '/security', label: 'Security' },
-        { href: '/about', label: 'About' },
+        { href: '/', label: 'The Vault' },
+        { href: '/security', label: 'Architecture & Trust' },
     ];
 
     return (
