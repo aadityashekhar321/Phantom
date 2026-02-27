@@ -1,0 +1,17 @@
+{
+    "name": "Phantom Security Vault",
+    "short_name": "Phantom",
+    "theme_color": "#050510",
+    "background_color": "#050510",
+    "display": "standalone",
+    "orientation": "portrait",
+    "scope": "/",
+    "start_url": "/",
+    "icons": [
+        {
+            "src": "/logo.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { GlassCard } from '@/components/GlassCard';
 import { MagneticButton } from '@/components/MagneticButton';
-import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload } from 'lucide-react';
+import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb } from 'lucide-react';
 import { toast } from 'sonner';
 import { extractTextFromImage, hideTextInImage } from '@/lib/stego';
+import jsQR from 'jsqr';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,7 +32,12 @@ export default function Home() {
   const [stegoPayload, setStegoPayload] = useState('');
   const [stegoCarrier, setStegoCarrier] = useState('');
   const [showQR, setShowQR] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isPanic, setIsPanic] = useState(false);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Dual Image Encryption Mode
   const [imageMode, setImageMode] = useState<'stego' | 'full'>('stego');
@@ -70,6 +76,68 @@ export default function Home() {
       }
     }
   }, []);
+
+  // Live QR Scanner Logic
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    let animationFrameId: number;
+
+    const startScanner = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.setAttribute('playsinline', 'true'); // Required for iOS Safari
+          await videoRef.current.play();
+          requestAnimationFrame(tick);
+        }
+      } catch {
+        toast.error('Camera access denied or unavailable.');
+        setShowQRScanner(false);
+      }
+    };
+
+    const tick = () => {
+      if (!videoRef.current || !canvasRef.current || !showQRScanner) return;
+
+      if (videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA) {
+        const canvas = canvasRef.current;
+        const video = videoRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'dontInvert',
+          });
+
+          if (code) {
+            setText(code.data);
+            setMode('decode');
+            setShowQRScanner(false);
+            toast.success('QR Code successfully scanned and loaded!');
+            return;
+          }
+        }
+      }
+      animationFrameId = requestAnimationFrame(tick);
+    };
+
+    if (showQRScanner) {
+      startScanner();
+    }
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [showQRScanner]);
 
   useEffect(() => {
     if (mode === 'decode') return;
@@ -303,6 +371,37 @@ export default function Home() {
     setMobileMenuOpen(false);
   };
 
+  const generateShareLink = () => {
+    if (!output) return;
+    const url = `${window.location.origin}/#data=${encodeURIComponent(output)}`;
+    navigator.clipboard.writeText(url);
+    triggerHaptic();
+    toast.success('Secure Link copied! Anyone with the password can open this.');
+    setMobileMenuOpen(false);
+  };
+
+  const handlePanic = () => {
+    setIsPanic(true);
+    setText('');
+    setPassword('');
+    setOutput('');
+    setShowQR(false);
+    setHasInteracted(false);
+    setStagedImage(null);
+    setStegoCarrier('');
+    setStegoPayload('');
+    setStegoModalOpen(false);
+    setShowQRScanner(false);
+
+    // Attempt to clear clipboard silently
+    navigator.clipboard.writeText('--- PHANTOM MEMORY WIPED ---').catch(() => { });
+
+    setTimeout(() => {
+      setIsPanic(false);
+      toast.success('Panic sequence complete. Local memory wiped.', { style: { background: '#ef4444', color: '#fff', border: 'none' } });
+    }, 800);
+  };
+
   const handleClear = () => {
     setText('');
     setPassword('');
@@ -322,6 +421,18 @@ export default function Home() {
     element.click();
     document.body.removeChild(element);
     toast.success('File downloaded!');
+  };
+
+  const downloadVaultFile = () => {
+    if (!output) return;
+    const element = document.createElement("a");
+    const file = new Blob([output], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `secret_${Date.now()}.phantom`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    toast.success('Exported to Phantom Vault format!');
   };
 
   // --- File Drop Handlers for Phantom Vault ---
@@ -347,6 +458,24 @@ export default function Home() {
 
     try {
       const reader = new FileReader();
+
+      // Intercept .phantom Vault files
+      if (file.name.endsWith('.phantom')) {
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            setText(event.target.result as string);
+            setMode('decode');
+            toast.success('Phantom Vault file detected! Ready to unlock.');
+            setLoading(false);
+          }
+        };
+        reader.onerror = () => {
+          toast.error('Failed to read Phantom Vault file.');
+          setLoading(false);
+        };
+        reader.readAsText(file);
+        return;
+      }
 
       if (file.type.startsWith('image/')) {
         reader.onload = async (event) => {
@@ -508,9 +637,19 @@ export default function Home() {
                       title="Upload Image/File"
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Upload File</span>
                       <span className="sm:hidden">Upload</span>
                     </button>
+                    {mode === 'decode' && (
+                      <button
+                        onClick={() => setShowQRScanner(true)}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-500/20 hover:bg-emerald-500/40 px-3 py-1.5 rounded-full border border-emerald-500/30 transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        title="Scan QR Code"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Scan QR</span>
+                        <span className="sm:hidden">Scan</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -702,6 +841,24 @@ export default function Home() {
 
                     {/* Desktop Actions */}
                     <div className="hidden sm:flex flex-wrap gap-2 relative z-10">
+                      {mode === 'encode' && (
+                        <button
+                          onClick={downloadVaultFile}
+                          className="flex items-center gap-2 text-xs font-medium text-emerald-300 hover:text-white transition-colors bg-emerald-500/10 hover:bg-emerald-500/30 px-3 py-1.5 rounded-md border border-emerald-500/30 shadow-md"
+                          title="Export to .phantom Vault File"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                          <span>.phantom</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={generateShareLink}
+                        className="flex items-center gap-2 text-xs font-medium text-indigo-300 hover:text-white transition-colors bg-indigo-500/10 hover:bg-indigo-500/30 px-3 py-1.5 rounded-md border border-indigo-500/30 shadow-md"
+                        title="Generate Secure Link"
+                      >
+                        <LinkIcon className="w-3.5 h-3.5" />
+                        <span>Link</span>
+                      </button>
                       <button
                         onClick={() => setShowQR(!showQR)}
                         className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5"
@@ -836,6 +993,57 @@ export default function Home() {
         </div>
       </motion.div>
 
+      {/* QR Scanner Modal */}
+      <AnimatePresence>
+        {showQRScanner && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowQRScanner(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-[#050510] border border-emerald-500/30 rounded-3xl p-6 shadow-[0_0_50px_rgba(16,185,129,0.2)] overflow-hidden flex flex-col items-center"
+            >
+              <div className="absolute top-0 right-0 p-4 z-10">
+                <button
+                  onClick={() => setShowQRScanner(false)}
+                  className="text-gray-400 hover:text-white transition-colors bg-black/50 hover:bg-black/80 p-2 rounded-full"
+                >
+                  <CloseIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4 shadow-lg shadow-emerald-500/10">
+                <Camera className="w-6 h-6" />
+              </div>
+
+              <h3 className="text-xl font-bold text-white tracking-tight mb-2 text-center">Live Scanner</h3>
+              <p className="text-gray-400 text-sm leading-relaxed text-center mb-6">
+                Point your camera at a Phantom QR code to instantly load the encrypted payload.
+              </p>
+
+              <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-emerald-500/50 bg-black/50">
+                <video
+                  ref={videoRef}
+                  className="w-full h-full object-cover"
+                />
+                <canvas ref={canvasRef} className="hidden" />
+                {/* Scanner Target Guide */}
+                <div className="absolute inset-0 border-[40px] border-black/50 pointer-events-none flex items-center justify-center">
+                  <div className="w-full h-full border-2 border-emerald-400/80 rounded-xl animate-pulse"></div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Steganography Weaponize Modal */}
       <AnimatePresence>
         {stegoModalOpen && (
@@ -927,6 +1135,24 @@ export default function Home() {
                   <span className="font-semibold text-lg">Copy to Clipboard</span>
                 </button>
 
+                {mode === 'encode' && (
+                  <button
+                    onClick={downloadVaultFile}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl bg-emerald-500/10 text-emerald-200 border border-emerald-500/20"
+                  >
+                    <Save className="w-5 h-5 text-emerald-400" />
+                    <span className="font-semibold text-lg">Export to .phantom</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={generateShareLink}
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl bg-indigo-500/10 text-indigo-200 border border-indigo-500/20"
+                >
+                  <LinkIcon className="w-5 h-5 text-indigo-400" />
+                  <span className="font-semibold text-lg">Share via Link</span>
+                </button>
+
                 <button
                   onClick={() => { setShowQR(!showQR); setMobileMenuOpen(false); }}
                   className="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/5 text-gray-200 border border-white/10"
@@ -945,6 +1171,31 @@ export default function Home() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Global Panic Button */}
+      <button
+        onClick={handlePanic}
+        className="fixed bottom-6 right-6 z-[90] flex items-center justify-center p-4 bg-red-600/10 hover:bg-red-600 border border-red-500/30 hover:border-red-500 rounded-full text-red-500 hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(220,38,38,0.1)] hover:shadow-[0_0_40px_rgba(220,38,38,0.6)] backdrop-blur-md group overflow-hidden"
+        title="Emergency Memory Wipe"
+      >
+        <Bomb className="w-5 h-5 z-10" />
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] whitespace-nowrap ml-0 group-hover:ml-3 font-bold text-sm tracking-widest uppercase z-10">
+          Panic Wipe
+        </span>
+      </button>
+
+      {/* Panic Overlay Flash */}
+      <AnimatePresence>
+        {isPanic && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[1000] bg-red-600 mix-blend-overlay pointer-events-none"
+          />
         )}
       </AnimatePresence>
     </motion.div>

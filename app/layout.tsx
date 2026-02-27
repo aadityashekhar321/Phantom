@@ -11,6 +11,7 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mon
 export const metadata: Metadata = {
   title: 'Phantom | Secure & Invisible Communication',
   description: 'Convert messages into unreadable encoded text securely entirely in your browser using AES-256-GCM.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
