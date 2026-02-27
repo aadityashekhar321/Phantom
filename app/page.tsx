@@ -24,6 +24,7 @@ export default function Home() {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [output, setOutput] = useState('');
   const [displayedOutput, setDisplayedOutput] = useState('');
+  const [isScrambling, setIsScrambling] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [stegoModalOpen, setStegoModalOpen] = useState(false);
@@ -81,6 +82,7 @@ export default function Home() {
   useEffect(() => {
     if (!output) {
       setDisplayedOutput('');
+      setIsScrambling(false);
       return;
     }
 
@@ -96,8 +98,11 @@ export default function Home() {
     // Performance optimization: Don't scramble massive files
     if (targetText.length > 500) {
       setDisplayedOutput(targetText);
+      setIsScrambling(false);
       return;
     }
+
+    setIsScrambling(true);
 
     const interval = setInterval(() => {
       setDisplayedOutput(
@@ -116,12 +121,16 @@ export default function Home() {
       if (iteration >= maxIterations) {
         clearInterval(interval);
         setDisplayedOutput(targetText);
+        setIsScrambling(false);
       }
 
       iteration += 1;
     }, intervalTime);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      setIsScrambling(false);
+    };
   }, [output]);
 
   // Auto-detect Ciphertext
@@ -740,7 +749,7 @@ export default function Home() {
                   )}
 
                   <div className="p-4 sm:p-6 relative max-w-full">
-                    <p className="font-mono text-xs sm:text-sm md:text-base text-gray-300 break-all select-all leading-relaxed max-h-60 overflow-y-auto w-full custom-scrollbar">
+                    <p className={`font-mono text-xs sm:text-sm md:text-base break-all select-all leading-relaxed max-h-60 overflow-y-auto w-full custom-scrollbar transition-colors duration-300 ${isScrambling ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-gray-300'}`}>
                       {displayedOutput}
                     </p>
                   </div>
@@ -771,6 +780,26 @@ export default function Home() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Supported Formats Marquee */}
+      <div className="w-full max-w-4xl pt-8 pb-4 px-4 overflow-hidden relative">
+        <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-[#050510] to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-[#050510] to-transparent z-10 pointer-events-none" />
+        <p className="text-center text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-6">Built To Secure Any Payload</p>
+
+        <div className="flex animate-[marquee_20s_linear_infinite] w-max gap-8 md:gap-16 items-center flex-nowrap opacity-60 hover:opacity-100 transition-opacity">
+          {/* Double the items to create a seamless infinite scroll effect */}
+          {[...Array(2)].map((_, i) => (
+            <React.Fragment key={i}>
+              <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><FileText className="w-4 h-4 text-indigo-400" /> TEXT MESSAGES</div>
+              <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><FileText className="w-4 h-4 text-rose-400" /> PDF DOCUMENTS</div>
+              <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><ImageIcon className="w-4 h-4 text-emerald-400" /> PNG / JPG CARRIERS</div>
+              <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><FileText className="w-4 h-4 text-cyan-400" /> JSON PAYLOADS</div>
+              <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><Key className="w-4 h-4 text-yellow-500" /> MNEMONIC SEEDS</div>
+            </React.Fragment>
+          ))}
         </div>
       </div>
 

@@ -149,6 +149,34 @@ export default function HowItWorks() {
                         </p>
                     </div>
                 </div>
+
+                {/* Feature Comparison Table */}
+                <div className="mt-12 overflow-x-auto bg-black/40 border border-white/10 rounded-2xl">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-white/5 border-b border-white/10">
+                                <th className="p-4 text-sm font-semibold text-gray-300">Mode</th>
+                                <th className="p-4 text-sm font-semibold text-gray-300 hidden sm:table-cell">How it Works</th>
+                                <th className="p-4 text-sm font-semibold text-gray-300">Visual Output</th>
+                                <th className="p-4 text-sm font-semibold text-gray-300 hidden md:table-cell">Best For</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/10 text-sm">
+                            <tr className="hover:bg-white/[0.02] transition-colors">
+                                <td className="p-4 font-semibold text-indigo-400">Steganography</td>
+                                <td className="p-4 text-gray-400 hidden sm:table-cell">Hides text mathematically in pixel LSBs</td>
+                                <td className="p-4 text-gray-300">Looks identical to original</td>
+                                <td className="p-4 text-gray-400 hidden md:table-cell">Passing messages in plain sight</td>
+                            </tr>
+                            <tr className="hover:bg-white/[0.02] transition-colors">
+                                <td className="p-4 font-semibold text-cyan-400">Full Encryption</td>
+                                <td className="p-4 text-gray-400 hidden sm:table-cell">Scrambles the entire raw file into ciphertext</td>
+                                <td className="p-4 text-gray-300">Unreadable text block (.txt)</td>
+                                <td className="p-4 text-gray-400 hidden md:table-cell">Archiving or locking images completely</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </GlassCard>
         </motion.div>
     );

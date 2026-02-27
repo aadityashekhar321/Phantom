@@ -1,7 +1,7 @@
 'use client';
 
 import { GlassCard } from '@/components/GlassCard';
-import { Github, Shield, Zap, Sparkles, WifiOff } from 'lucide-react';
+import { Github, Shield, Zap, Sparkles, WifiOff, Users, Database, Briefcase } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 
@@ -51,26 +51,56 @@ export default function About() {
                             We believe that privacy is a fundamental human right, not a premium feature. We don&apos;t ask for your personal information, we don&apos;t show ads, and most importantly—we never, ever see your messages.
                         </p>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 pt-10">
-                            <div className="bg-white/[0.03] p-5 sm:p-8 rounded-3xl border border-white/5 text-left h-full hover:bg-white/[0.05] transition-colors">
-                                <Shield className="w-8 h-8 text-emerald-400 mb-4" />
-                                <h3 className="text-white font-bold mb-2">Zero-Knowledge Architecture</h3>
-                                <p className="text-sm leading-relaxed text-gray-400">Everything happens securely inside your own web browser. Your data never touches a server.</p>
+                        <div className="pt-10">
+                            <h2 className="text-2xl font-bold text-white mb-8">Built For</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                                <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 space-y-3 hover:border-white/10 transition-colors">
+                                    <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400 mb-2">
+                                        <Users className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white">Journalists</h3>
+                                    <p className="text-sm text-gray-400 leading-relaxed">Protecting anonymous sources and transmitting sensitive data without leaving digital footprints.</p>
+                                </div>
+                                <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 space-y-3 hover:border-white/10 transition-colors">
+                                    <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 mb-2">
+                                        <Database className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white">Personal Archival</h3>
+                                    <p className="text-sm text-gray-400 leading-relaxed">Encrypting crypto seed phrases or private passwords offline before uploading them to cloud storage.</p>
+                                </div>
+                                <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 space-y-3 hover:border-white/10 transition-colors">
+                                    <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-400 mb-2">
+                                        <Briefcase className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white">IP Protection</h3>
+                                    <p className="text-sm text-gray-400 leading-relaxed">Sharing proprietary code, trade secrets, or unreleased assets securely with business partners.</p>
+                                </div>
                             </div>
-                            <div className="bg-white/[0.03] p-5 sm:p-8 rounded-3xl border border-white/5 text-left h-full hover:bg-white/[0.05] transition-colors">
-                                <Zap className="w-8 h-8 text-yellow-400 mb-4" />
-                                <h3 className="text-white font-bold mb-2">Lightning Fast</h3>
-                                <p className="text-sm leading-relaxed text-gray-400">Powered by native Web Crypto APIs ensuring military-grade cryptographic operations occur in milliseconds.</p>
-                            </div>
-                            <div className="bg-white/[0.03] p-5 sm:p-8 rounded-3xl border border-white/5 text-left h-full hover:bg-white/[0.05] transition-colors">
-                                <Sparkles className="w-8 h-8 text-purple-400 mb-4" />
-                                <h3 className="text-white font-bold mb-2">Advanced Steganography</h3>
-                                <p className="text-sm leading-relaxed text-gray-400">Hide your encrypted payloads directly inside ordinary images. Seamless, undetectable, and highly secure.</p>
-                            </div>
-                            <div className="bg-white/[0.03] p-5 sm:p-8 rounded-3xl border border-white/5 text-left h-full hover:bg-white/[0.05] transition-colors">
-                                <WifiOff className="w-8 h-8 text-blue-400 mb-4" />
-                                <h3 className="text-white font-bold mb-2">100% Offline Capable</h3>
-                                <p className="text-sm leading-relaxed text-gray-400">Since Phantom has no central database, you can download the site and run it entirely offline for absolute paranoia mode.</p>
+                        </div>
+
+                        <div className="pt-10 border-t border-white/5 mt-10">
+                            <h2 className="text-2xl font-bold text-white mb-8">Core Pillars</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                <div className="bg-white/[0.03] p-5 sm:p-8 rounded-3xl border border-white/5 text-left h-full hover:bg-white/[0.05] transition-colors">
+                                    <Shield className="w-8 h-8 text-emerald-400 mb-4" />
+                                    <h3 className="text-white font-bold mb-2">Zero-Knowledge Architecture</h3>
+                                    <p className="text-sm leading-relaxed text-gray-400">Everything happens securely inside your own web browser. Your data never touches a server.</p>
+                                </div>
+                                <div className="bg-white/[0.03] p-5 sm:p-8 rounded-3xl border border-white/5 text-left h-full hover:bg-white/[0.05] transition-colors">
+                                    <Zap className="w-8 h-8 text-yellow-400 mb-4" />
+                                    <h3 className="text-white font-bold mb-2">Lightning Fast</h3>
+                                    <p className="text-sm leading-relaxed text-gray-400">Powered by native Web Crypto APIs ensuring military-grade cryptographic operations occur in milliseconds.</p>
+                                </div>
+                                <div className="bg-white/[0.03] p-5 sm:p-8 rounded-3xl border border-white/5 text-left h-full hover:bg-white/[0.05] transition-colors">
+                                    <Sparkles className="w-8 h-8 text-purple-400 mb-4" />
+                                    <h3 className="text-white font-bold mb-2">Advanced Steganography</h3>
+                                    <p className="text-sm leading-relaxed text-gray-400">Hide your encrypted payloads directly inside ordinary images. Seamless, undetectable, and highly secure.</p>
+                                </div>
+                                <div className="bg-white/[0.03] p-5 sm:p-8 rounded-3xl border border-white/5 text-left h-full hover:bg-white/[0.05] transition-colors">
+                                    <WifiOff className="w-8 h-8 text-blue-400 mb-4" />
+                                    <h3 className="text-white font-bold mb-2">100% Offline Capable</h3>
+                                    <p className="text-sm leading-relaxed text-gray-400">Since Phantom has no central database, you can download the site and run it entirely offline for absolute paranoia mode.</p>
+                                </div>
                             </div>
                         </div>
                     </div>

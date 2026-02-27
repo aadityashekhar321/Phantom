@@ -85,9 +85,15 @@ export default function SecurityInfo() {
                             The Cryptographic Pipeline
                         </h2>
                         <div className="bg-black/40 border border-white/5 p-6 sm:p-8 rounded-3xl relative overflow-hidden">
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 relative z-10">
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-4 lg:gap-6 relative z-10 w-full mb-10 sm:mb-0 pt-6 sm:pt-10">
                                 {/* Step 1 */}
-                                <div className="flex flex-col items-center text-center space-y-2 w-full sm:w-1/4">
+                                <div className="group flex flex-col items-center text-center space-y-2 w-full sm:w-1/4 relative cursor-help">
+                                    {/* Tooltip */}
+                                    <div className="absolute -top-14 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform scale-95 group-hover:scale-100 z-50 pointer-events-none">
+                                        <div className="bg-black/90 border border-white/20 text-xs text-gray-300 p-2 rounded-lg shadow-xl shadow-black/50 whitespace-nowrap backdrop-blur-md">
+                                            The original unprotected data
+                                        </div>
+                                    </div>
                                     <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400">
                                         <FileDigit className="w-6 h-6" />
                                     </div>
@@ -99,7 +105,13 @@ export default function SecurityInfo() {
                                 <ArrowRight className="w-6 h-6 text-red-500/50 sm:hidden rotate-90" />
 
                                 {/* Step 2 */}
-                                <div className="flex flex-col items-center text-center space-y-2 w-full sm:w-1/4">
+                                <div className="group flex flex-col items-center text-center space-y-2 w-full sm:w-1/4 relative cursor-help">
+                                    {/* Tooltip */}
+                                    <div className="absolute -top-14 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform scale-95 group-hover:scale-100 z-50 pointer-events-none">
+                                        <div className="bg-black/90 border border-white/20 text-xs text-gray-300 p-2 rounded-lg shadow-xl shadow-black/50 whitespace-nowrap backdrop-blur-md">
+                                            Derives a master key via 100k hashes
+                                        </div>
+                                    </div>
                                     <div className="w-12 h-12 rounded-xl bg-red-500/20 border border-red-500/30 flex items-center justify-center text-red-400">
                                         <Key className="w-6 h-6" />
                                     </div>
@@ -111,7 +123,13 @@ export default function SecurityInfo() {
                                 <ArrowRight className="w-6 h-6 text-red-500/50 sm:hidden rotate-90" />
 
                                 {/* Step 3 */}
-                                <div className="flex flex-col items-center text-center space-y-2 w-full sm:w-1/4">
+                                <div className="group flex flex-col items-center text-center space-y-2 w-full sm:w-1/4 relative cursor-help">
+                                    {/* Tooltip */}
+                                    <div className="absolute -top-14 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform scale-95 group-hover:scale-100 z-50 pointer-events-none">
+                                        <div className="bg-black/90 border border-white/20 text-xs text-gray-300 p-2 rounded-lg shadow-xl shadow-black/50 whitespace-nowrap backdrop-blur-md">
+                                            Scrambles data with authenticated math
+                                        </div>
+                                    </div>
                                     <div className="w-12 h-12 rounded-xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
                                         <Shield className="w-6 h-6" />
                                     </div>
@@ -123,7 +141,13 @@ export default function SecurityInfo() {
                                 <ArrowRight className="w-6 h-6 text-red-500/50 sm:hidden rotate-90" />
 
                                 {/* Step 4 */}
-                                <div className="flex flex-col items-center text-center space-y-2 w-full sm:w-1/4">
+                                <div className="group flex flex-col items-center text-center space-y-2 w-full sm:w-1/4 relative cursor-help">
+                                    {/* Tooltip */}
+                                    <div className="absolute -top-14 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform scale-95 group-hover:scale-100 z-50 pointer-events-none">
+                                        <div className="bg-black/90 border border-white/20 text-xs text-gray-300 p-2 rounded-lg shadow-xl shadow-black/50 whitespace-nowrap backdrop-blur-md">
+                                            The fully locked, unreadable output
+                                        </div>
+                                    </div>
                                     <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
                                         <Lock className="w-6 h-6" />
                                     </div>
@@ -147,6 +171,24 @@ export default function SecurityInfo() {
                                 <br className="hidden sm:block" />
                                 Everything is stored temporarily in RAM. The keys and plaintexts are cleared when the session closes.
                             </p>
+                        </div>
+                    </div>
+
+                    {/* Threat Model & Limitations Section */}
+                    <div className="space-y-8 sm:space-y-10 pt-4">
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
+                            <Shield className="w-6 h-6 text-orange-400" />
+                            Threat Model & Limitations
+                        </h2>
+                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-3xl p-6 sm:p-8 space-y-4">
+                            <p className="text-orange-200/80 text-sm sm:text-base leading-relaxed mb-4">
+                                Absolute security requires absolute transparency. While Phantom mathematically guarantees your data is secure in transit and at rest, it <strong>cannot</strong> protect against endpoint compromise:
+                            </p>
+                            <ul className="list-disc list-inside space-y-3 text-orange-200/60 text-sm sm:text-base">
+                                <li><strong>Keyloggers:</strong> If your OS is infected with malware, attackers can capture your Secret Key as you type it.</li>
+                                <li><strong>Screen Grabbers:</strong> Malicious background apps could record your screen before you click &quot;Lock&quot;.</li>
+                                <li><strong>Physical Access:</strong> Phantom does not protect you if someone physically looks over your shoulder.</li>
+                            </ul>
                         </div>
                     </div>
 
