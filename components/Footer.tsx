@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Github, Shield, Lock } from 'lucide-react';
+import { Github, Shield, Lock, FileText, Clock, Star } from 'lucide-react';
 
 export function Footer() {
     const year = new Date().getFullYear();
@@ -8,9 +8,9 @@ export function Footer() {
     return (
         <footer className="w-full border-t border-white/5 bg-[#09090b]/60 backdrop-blur-sm mt-auto">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8 mb-10">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-10 sm:gap-6 mb-10">
                     {/* Brand */}
-                    <div className="space-y-4">
+                    <div className="space-y-4 sm:col-span-1">
                         <Link href="/" className="flex items-center gap-3 group w-fit">
                             <div className="w-9 h-9 rounded-xl bg-black shadow-lg shadow-indigo-500/20 flex items-center justify-center overflow-hidden border border-white/10">
                                 <Image src="/logo.png" alt="Phantom Logo" width={36} height={36} className="object-cover" />
@@ -20,6 +20,16 @@ export function Footer() {
                         <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
                             Military-grade AES-256-GCM encryption in your browser. Zero servers. Zero databases. Zero trace.
                         </p>
+                        {/* GitHub Stars Badge */}
+                        <a
+                            href="https://github.com/aadityashekhar321/Phantom"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                        >
+                            <Star className="w-3 h-3 text-yellow-400" />
+                            Star on GitHub
+                        </a>
                     </div>
 
                     {/* Navigation */}
@@ -33,22 +43,36 @@ export function Footer() {
                                 </Link>
                             </li>
                             <li>
+                                <Link href="/notes" className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                                    <FileText className="w-3.5 h-3.5 text-violet-500" />
+                                    Secure Notes
+                                </Link>
+                            </li>
+                            <li>
                                 <Link href="/security" className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2">
                                     <Shield className="w-3.5 h-3.5 text-red-500" />
-                                    Architecture &amp; Trust
+                                    Architecture & Trust
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/changelog" className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2">
+                                    <Clock className="w-3.5 h-3.5 text-cyan-500" />
+                                    Changelog
                                 </Link>
                             </li>
                         </ul>
                     </div>
 
                     {/* Trust Signals */}
-                    <div className="space-y-4">
+                    <div className="space-y-4 sm:col-span-2">
                         <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-gray-500">Security Promises</h3>
-                        <ul className="space-y-2 text-sm text-gray-500">
+                        <ul className="space-y-2 text-sm text-gray-500 grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span> No data ever leaves your device</li>
                             <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span> No accounts, no tracking, no analytics</li>
                             <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span> 100% open-source and auditable</li>
                             <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span> Works fully offline (PWA)</li>
+                            <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span> Per-message random Salt and IV</li>
+                            <li className="flex items-start gap-2"><span className="text-emerald-400 mt-0.5 flex-shrink-0">✓</span> PBKDF2 · 100,000 iterations</li>
                         </ul>
                     </div>
                 </div>

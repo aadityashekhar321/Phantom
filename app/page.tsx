@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { GlassCard } from '@/components/GlassCard';
 import { MagneticButton } from '@/components/MagneticButton';
-import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb, Sparkles, Eye, EyeOff, Check, Zap, WifiOff } from 'lucide-react';
+import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb, Sparkles, Eye, EyeOff, Check, Zap, WifiOff, Shuffle, WrapText, Clock, AlignLeft, Files } from 'lucide-react';
+import { HistoryPanel, type HistoryEntry } from '@/components/HistoryPanel';
 import { toast } from 'sonner';
 import { extractTextFromImage, hideTextInImage } from '@/lib/stego';
 import jsQR from 'jsqr';
@@ -38,6 +39,21 @@ export default function Home() {
   const [showPassword, setShowPassword] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
+  // Category 1: Word-wrap, history, split stats, drag-to-reorder
+  const [wrapOutput, setWrapOutput] = useState(true);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
+  const [splitStats, setSplitStats] = useState<{ inputLen: number; outputLen: number } | null>(null);
+
+  // Category 2: Share expiry, text diff, batch files, prev decoded
+  const [shareExpiry, setShareExpiry] = useState<'1h' | '24h' | '7d' | 'none'>('none');
+  const [prevDecoded, setPrevDecoded] = useState<string | null>(null);
+  const [showDiff, setShowDiff] = useState(false);
+  const batchInputRef = useRef<HTMLInputElement>(null);
+  const [batchFiles, setBatchFiles] = useState<{ name: string; data: string }[]>([]);
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [batchPassword, setBatchPassword] = useState('');
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
@@ -65,16 +81,25 @@ export default function Home() {
       const hash = window.location.hash;
       if (hash && hash.startsWith('#data=')) {
         try {
-          const encodedData = decodeURIComponent(hash.replace('#data=', ''));
+          // Check for expiry parameter first
+          const hashContent = hash.replace('#data=', '');
+          const expMatch = hashContent.match(/&exp=(\d+)$/);
+          if (expMatch) {
+            const expiry = parseInt(expMatch[1]);
+            if (Date.now() > expiry) {
+              toast.error('This secure link has expired and cannot be loaded.');
+              window.history.replaceState(null, '', window.location.pathname);
+              return;
+            }
+          }
+          const encodedData = decodeURIComponent(hashContent.replace(/&exp=\d+$/, ''));
           setText(encodedData);
           setMode('decode');
           setHasInteracted(true);
           toast.success('Secure payload detected from URL! Ready to decrypt.');
-
-          // Clean the URL so it doesn't stay in history
           window.history.replaceState(null, '', window.location.pathname);
         } catch {
-          console.error("Failed to parse URL hash data");
+          console.error('Failed to parse URL hash data');
         }
       }
     }
@@ -242,6 +267,41 @@ export default function Home() {
     }
   };
 
+  // Password Generator
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    const arr = new Uint8Array(20);
+    crypto.getRandomValues(arr);
+    const gen = Array.from(arr, (b) => chars[b % chars.length]).join('');
+    setPassword(gen);
+    setPasswordStrength(100);
+    setShowPassword(true);
+    toast.success('Strong password generated!');
+  };
+
+  // Batch Encrypt handler
+  const handleBatchEncrypt = async () => {
+    if (batchFiles.length === 0) { toast.error('Add files to batch first.'); return; }
+    if (!batchPassword) { toast.error('Enter a batch password.'); return; }
+    setBatchLoading(true);
+    try {
+      const entries: Record<string, string> = {};
+      for (const f of batchFiles) {
+        const { processCryptoAsync: enc } = await import('@/lib/cryptoWorkerClient');
+        entries[f.name] = await enc('encode', f.data, batchPassword);
+      }
+      const bundle = JSON.stringify({ phantom_batch: true, count: batchFiles.length, entries });
+      const blob = new Blob([bundle], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `phantom_batch_${Date.now()}.phantom`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setBatchFiles([]); setBatchPassword('');
+      toast.success(`${batchFiles.length} files encrypted and bundled into .phantom archive.`);
+    } catch { toast.error('Batch encryption failed.'); }
+    finally { setBatchLoading(false); }
+  };
+
   // Simple Password Strength Evaluator
   const handlePasswordChange = (evt: React.ChangeEvent<HTMLInputElement>) => {
     triggerKeystrokeAura();
@@ -338,6 +398,7 @@ export default function Home() {
           setStegoCarrier('');
         } else {
           setOutput(result);
+          setSplitStats({ inputLen: payloadData.length, outputLen: result.length });
           toast.success('Message locked successfully.');
         }
       } else {
@@ -364,9 +425,29 @@ export default function Home() {
           }
         }
 
+        // Text diff: compare with previous decoded text
+        if (prevDecoded !== null && prevDecoded !== result) {
+          setPrevDecoded(result);
+          setShowDiff(false);
+        } else {
+          setPrevDecoded(result);
+        }
         setOutput(result);
+        setSplitStats({ inputLen: payloadData.length, outputLen: result.length });
         toast.success('Message unlocked successfully.');
       }
+
+      // Push to history
+      const entry: HistoryEntry = {
+        id: Date.now().toString(),
+        mode,
+        inputPreview: payloadData.slice(0, 40) + (payloadData.length > 40 ? '…' : ''),
+        outputLength: 0,
+        timeMs: 0,
+        timestamp: new Date(),
+      };
+      // update after we have endTime below
+      setHistoryEntries(prev => [{ ...entry }, ...prev].slice(0, 20));
 
       // Auto-scroll to output panel on mobile/tablet after processing
       setTimeout(() => {
@@ -397,10 +478,16 @@ export default function Home() {
 
   const generateShareLink = () => {
     if (!output) return;
-    const url = `${window.location.origin}/#data=${encodeURIComponent(output)}`;
+    let expMs = '';
+    if (shareExpiry !== 'none') {
+      const durations: Record<string, number> = { '1h': 3600000, '24h': 86400000, '7d': 604800000 };
+      expMs = `&exp=${Date.now() + durations[shareExpiry]}`;
+    }
+    const url = `${window.location.origin}/#data=${encodeURIComponent(output)}${expMs}`;
     navigator.clipboard.writeText(url);
     triggerHaptic();
-    toast.success('Secure Link copied! Anyone with the password can open this.');
+    const label = shareExpiry === 'none' ? 'no expiry' : `expires in ${shareExpiry}`;
+    toast.success(`Secure link copied (${label})!`);
     setMobileMenuOpen(false);
   };
 
@@ -797,16 +884,27 @@ export default function Home() {
                     onChange={handlePasswordChange}
                     placeholder="Enter a strong password..."
                     aria-label="Secret Key Password"
-                    className="w-full relative z-10 bg-black/80 border border-white/10 rounded-2xl p-5 pr-14 text-base sm:text-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] transition-all font-mono tracking-wider"
+                    className="w-full relative z-10 bg-black/80 border border-white/10 rounded-2xl p-5 pr-20 text-base sm:text-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] transition-all font-mono tracking-wider"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 text-gray-500 hover:text-indigo-300 transition-colors focus:outline-none"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={generatePassword}
+                      aria-label="Generate random password"
+                      title="Generate strong password"
+                      className="text-gray-500 hover:text-indigo-300 transition-colors p-1 rounded-lg hover:bg-white/5"
+                    >
+                      <Shuffle className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      className="text-gray-500 hover:text-indigo-300 transition-colors p-1 rounded-lg hover:bg-white/5"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
                 {/* Password Strength Indicator + Text Label */}
                 {password.length > 0 && (
@@ -903,13 +1001,50 @@ export default function Home() {
                   {/* Inner edge highlight */}
                   <div className="absolute inset-0 rounded-3xl border border-white/5 pointer-events-none" />
 
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-5 py-4 border-b border-white/5 gap-4 sm:gap-0">
-                    <span className="text-xs sm:text-sm font-semibold text-indigo-300 tracking-widest uppercase">
-                      {mode === 'encode' ? 'Locked Secret Code' : 'Unlocked Message'}
-                    </span>
+                  <div className="flex items-start sm:items-center justify-between px-5 py-4 border-b border-white/5 gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs sm:text-sm font-semibold text-indigo-300 tracking-widest uppercase">
+                        {mode === 'encode' ? 'Locked Secret Code' : 'Unlocked Message'}
+                      </span>
+                      {splitStats && (
+                        <span className="hidden sm:inline text-[10px] text-gray-600 font-mono">
+                          {splitStats.inputLen} → {splitStats.outputLen} chars
+                          {' '}({splitStats.inputLen > 0 ? `×${(splitStats.outputLen / splitStats.inputLen).toFixed(1)}` : '—'})
+                        </span>
+                      )}
+                    </div>
 
-                    {/* Desktop Actions */}
-                    <div className="hidden sm:flex flex-wrap gap-2 relative z-10">
+                    {/* Desktop Actions + toolbar controls */}
+                    <div className="hidden sm:flex flex-wrap gap-2 items-center relative z-10">
+                      {/* Output toolbar extras: word-wrap + history */}
+                      <button
+                        onClick={() => setWrapOutput(!wrapOutput)}
+                        title={wrapOutput ? 'Switch to no-wrap mode' : 'Switch to wrap mode'}
+                        className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-white transition-colors bg-white/5 px-2.5 py-1.5 rounded-md border border-white/5"
+                      >
+                        {wrapOutput ? <AlignLeft className="w-3.5 h-3.5" /> : <WrapText className="w-3.5 h-3.5" />}
+                        <span className="hidden lg:inline">{wrapOutput ? 'Wrapping' : 'No Wrap'}</span>
+                      </button>
+                      <button
+                        onClick={() => setShowHistory(true)}
+                        title="Session History"
+                        className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-white transition-colors bg-white/5 px-2.5 py-1.5 rounded-md border border-white/5"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        <span className="hidden lg:inline">History</span>
+                      </button>
+                      {/* Share expiry selector */}
+                      <select
+                        value={shareExpiry}
+                        onChange={e => setShareExpiry(e.target.value as typeof shareExpiry)}
+                        className="text-[10px] bg-black/60 border border-white/10 rounded-md text-gray-400 px-1.5 py-1.5 focus:outline-none"
+                        title="Link expiry"
+                      >
+                        <option value="none">∞ No expiry</option>
+                        <option value="1h">1h expiry</option>
+                        <option value="24h">24h expiry</option>
+                        <option value="7d">7d expiry</option>
+                      </select>
                       {mode === 'encode' && (
                         <button
                           onClick={downloadVaultFile}
@@ -955,7 +1090,8 @@ export default function Home() {
                         {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                         <span>{isCopied ? 'Copied!' : 'Copy'}</span>
                       </button>
-                    </div>
+                    </div>{/* end action toolbar flex */}
+
 
                     {/* Mobile Actions Menu Toggle */}
                     <div className="sm:hidden absolute top-3 right-3 z-10">
@@ -978,9 +1114,28 @@ export default function Home() {
                   )}
 
                   <div className="p-4 sm:p-6 relative max-w-full">
-                    <p className={`font-mono text-xs sm:text-sm md:text-base break-all select-all leading-relaxed max-h-[clamp(15rem,30vh,40rem)] overflow-y-auto w-full custom-scrollbar transition-colors duration-300 ${isScrambling ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-gray-300'}`}>
+                    <p className={`font-mono text-xs sm:text-sm md:text-base select-all leading-relaxed max-h-[clamp(15rem,30vh,40rem)] overflow-y-auto w-full custom-scrollbar transition-colors duration-300 ${wrapOutput ? 'output-wrap' : 'output-nowrap'} ${isScrambling ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-gray-300'}`}>
                       {displayedOutput}
                     </p>
+                    {/* Text Diff Toggle (decode mode, when prev exists) */}
+                    {mode === 'decode' && prevDecoded && prevDecoded !== output && (
+                      <div className="mt-3 border-t border-white/5 pt-3">
+                        <button
+                          onClick={() => setShowDiff(!showDiff)}
+                          className="text-[11px] text-indigo-300 hover:text-white font-semibold flex items-center gap-1.5 transition-colors"
+                        >
+                          <AlignLeft className="w-3.5 h-3.5" />
+                          {showDiff ? 'Hide diff' : 'Show diff vs previous'}
+                        </button>
+                        {showDiff && (
+                          <div className="mt-2 text-xs font-mono text-gray-400 bg-black/40 rounded-xl p-3 max-h-32 overflow-y-auto custom-scrollbar">
+                            {output.split(' ').map((word, i) => (
+                              <span key={i} className={prevDecoded.split(' ').includes(word) ? 'text-gray-400' : 'text-yellow-300 underline'}>{word} </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Cryptographic Telemetry Stats */}
@@ -1016,6 +1171,94 @@ export default function Home() {
             )}
           </AnimatePresence>
         </div>
+      </div>
+
+      {/* ── History Panel (slide-out portal) ─────────────────── */}
+      <HistoryPanel
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        entries={historyEntries}
+        onRestore={(entry) => {
+          setText(entry.inputPreview);
+          setMode(entry.mode);
+          setShowHistory(false);
+          toast.info('Input restored from history.');
+        }}
+      />
+
+      {/* ── Batch Encrypt Section ────────────────────────────── */}
+      <div className="w-full max-w-5xl mt-8 px-1">
+        <GlassCard className="p-6 sm:p-8 space-y-5">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-8 h-8 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center">
+              <Files className="w-4 h-4 text-violet-400" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white">Batch Encrypt</h2>
+              <p className="text-xs text-gray-500">Select multiple files — they&apos;ll all be bundled into one encrypted <code className="text-gray-400">.phantom</code> archive.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              ref={batchInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                const readers = files.map(f => new Promise<{ name: string; data: string }>((resolve, reject) => {
+                  const r = new FileReader();
+                  r.onload = () => resolve({ name: f.name, data: r.result as string });
+                  r.onerror = reject;
+                  r.readAsDataURL(f);
+                }));
+                Promise.all(readers).then(results => {
+                  setBatchFiles(prev => [...prev, ...results]);
+                  toast.success(`${results.length} file(s) added to batch.`);
+                });
+              }}
+            />
+            <button
+              onClick={() => batchInputRef.current?.click()}
+              className="flex items-center gap-2 text-sm font-semibold text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 px-4 py-2.5 rounded-xl transition-all"
+            >
+              <Upload className="w-4 h-4" />
+              Add Files
+              {batchFiles.length > 0 && <span className="bg-violet-500/30 text-violet-200 text-xs px-1.5 py-0.5 rounded-full">{batchFiles.length}</span>}
+            </button>
+
+            <input
+              type="password"
+              value={batchPassword}
+              onChange={e => setBatchPassword(e.target.value)}
+              placeholder="Batch password..."
+              className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-violet-500/40 font-mono"
+            />
+
+            <button
+              onClick={handleBatchEncrypt}
+              disabled={batchLoading || batchFiles.length === 0 || !batchPassword}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold disabled:opacity-40 disabled:pointer-events-none transition-colors whitespace-nowrap"
+            >
+              {batchLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Lock className="w-4 h-4" /> Encrypt & Bundle</>}
+            </button>
+          </div>
+
+          {batchFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {batchFiles.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 text-xs bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-gray-400">
+                  <FileText className="w-3 h-3 text-violet-400" />
+                  <span className="max-w-[120px] truncate">{f.name}</span>
+                  <button onClick={() => setBatchFiles(prev => prev.filter((_, j) => j !== i))} className="text-gray-600 hover:text-red-400 transition-colors ml-1">
+                    <CloseIcon className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </GlassCard>
       </div>
 
       {/* Supported Formats Marquee */}

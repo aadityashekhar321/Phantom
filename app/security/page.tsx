@@ -4,7 +4,130 @@ import { GlassCard } from '@/components/GlassCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Lock, Key, Shield, FileDigit, ServerOff, Cpu, ArrowRight, Users, Database, Briefcase, Github } from 'lucide-react';
+import { ChevronDown, Lock, Key, Shield, FileDigit, ServerOff, Cpu, ArrowRight, Users, Database, Briefcase, Github, CheckCircle } from 'lucide-react';
+
+// ── Interactive Demo Component ────────────────────────────────────────────────
+const demoSteps = [
+    {
+        title: '1. Your Plaintext',
+        icon: FileDigit,
+        color: 'text-gray-400',
+        bg: 'bg-white/5 border-white/10',
+        description: 'Your original message is read from memory as UTF-8 encoded bytes. It never touches the network.',
+        output: '"Hello, Phantom!"  →  48 65 6c 6c 6f 2c 20 50 68 61 6e 74 6f 6d 21',
+    },
+    {
+        title: '2. Salt Generation',
+        icon: Key,
+        color: 'text-yellow-400',
+        bg: 'bg-yellow-500/10 border-yellow-500/20',
+        description: '16 cryptographically random bytes are generated via crypto.getRandomValues(). Even identical passwords produce different keys.',
+        output: 'SALT  →  a3 f9 12 7c 4e 88 b1 d0 52 9a 3f 61 e4 77 c2 8b',
+    },
+    {
+        title: '3. PBKDF2 Key Derivation',
+        icon: Cpu,
+        color: 'text-red-400',
+        bg: 'bg-red-500/10 border-red-500/20',
+        description: 'Your password is stretched through PBKDF2-SHA256 with 100,000 iterations into a 256-bit key. Each wrong guess MUST repeat this process.',
+        output: 'KEY  →  7f 3c a1 88 ... (32 bytes, AES-256 ready)',
+    },
+    {
+        title: '4. IV Generation',
+        icon: Shield,
+        color: 'text-violet-400',
+        bg: 'bg-violet-500/10 border-violet-500/20',
+        description: '12 random bytes form the Initialization Vector. This ensures encrypting the same plaintext twice never produces the same ciphertext.',
+        output: 'IV  →  9b 2a e7 31 05 fc 8d 40 6e b3 17 c9',
+    },
+    {
+        title: '5. AES-256-GCM Encryption',
+        icon: Lock,
+        color: 'text-indigo-400',
+        bg: 'bg-indigo-500/20 border-indigo-500/30',
+        description: 'AES-GCM simultaneously encrypts and authenticates. A 128-bit GCM tag is appended — any modification to the ciphertext is mathematically detectable.',
+        output: 'CIPHERTEXT  →  U2FsdGVkX1+3/A9x...  [IV · SALT · TAG · ENCRYPTED]',
+    },
+];
+
+function InteractiveDemoSteps() {
+    const [activeStep, setActiveStep] = useState(0);
+    const [animating, setAnimating] = useState(false);
+
+    const goToStep = (idx: number) => {
+        if (animating) return;
+        setAnimating(true);
+        setTimeout(() => { setActiveStep(idx); setAnimating(false); }, 200);
+    };
+
+    const step = demoSteps[activeStep];
+    const Icon = step.icon;
+
+    return (
+        <div className="space-y-4">
+            {/* Step pill selector */}
+            <div className="flex flex-wrap gap-2">
+                {demoSteps.map((s, i) => (
+                    <button
+                        key={i}
+                        onClick={() => goToStep(i)}
+                        className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${i === activeStep
+                            ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-100'
+                            : i < activeStep
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'
+                            }`}
+                    >
+                        {i < activeStep ? <CheckCircle className="w-3 h-3" /> : <span className="w-3 h-3 rounded-full border border-current inline-flex items-center justify-center text-[9px] font-bold leading-none">{i + 1}</span>}
+                        <span className="hidden sm:inline">{s.title.split('. ')[1]}</span>
+                    </button>
+                ))}
+            </div>
+
+            {/* Step detail card */}
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={activeStep}
+                    initial={{ opacity: 0, x: animating ? -10 : 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                    className={`bg-black/50 border ${step.bg.split(' ')[1]} rounded-2xl p-5 sm:p-6 space-y-4`}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl ${step.bg} flex items-center justify-center border`}>
+                            <Icon className={`w-5 h-5 ${step.color}`} />
+                        </div>
+                        <h3 className="text-base font-bold text-white">{step.title}</h3>
+                    </div>
+                    <p className="text-gray-300 text-sm leading-relaxed">{step.description}</p>
+                    <div className="bg-black/60 border border-white/5 rounded-xl p-3.5 font-mono text-xs text-emerald-300 break-all leading-relaxed">
+                        {step.output}
+                    </div>
+                </motion.div>
+            </AnimatePresence>
+
+            {/* Prev / Next controls */}
+            <div className="flex items-center justify-between pt-1">
+                <button
+                    onClick={() => goToStep(Math.max(0, activeStep - 1))}
+                    disabled={activeStep === 0}
+                    className="text-xs font-semibold text-gray-500 hover:text-white disabled:opacity-30 transition-colors px-3 py-1.5 border border-white/5 rounded-xl hover:border-white/20"
+                >
+                    ← Prev
+                </button>
+                <span className="text-[11px] text-gray-600 font-mono">Step {activeStep + 1} / {demoSteps.length}</span>
+                <button
+                    onClick={() => goToStep(Math.min(demoSteps.length - 1, activeStep + 1))}
+                    disabled={activeStep === demoSteps.length - 1}
+                    className="text-xs font-semibold text-gray-500 hover:text-white disabled:opacity-30 transition-colors px-3 py-1.5 border border-white/5 rounded-xl hover:border-white/20"
+                >
+                    Next →
+                </button>
+            </div>
+        </div>
+    );
+}
 
 const faqs = [
     {
@@ -226,6 +349,68 @@ export default function SecurityInfo() {
                                 </div>
                             ))}
                         </div>
+                    </div>
+
+                    {/* ── Verified by Math ─────────────────────────────── */}
+                    <div className="space-y-6 pt-4 border-t border-white/10 mt-4">
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
+                            <Shield className="w-6 h-6 text-indigo-400" />
+                            Verified by Math
+                        </h2>
+                        <p className="text-gray-400 text-sm leading-relaxed">
+                            Security is not a claim — it is a provable property. Here is what the mathematics guarantees:
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {[
+                                {
+                                    label: 'Brute-force search space',
+                                    value: '2²⁵⁶',
+                                    sub: '≈ 1.16 × 10⁷⁷ possible keys',
+                                    note: 'More than the number of atoms in the observable universe.',
+                                    color: 'text-indigo-300',
+                                },
+                                {
+                                    label: 'GPU guesses per second',
+                                    value: '~10¹³',
+                                    sub: 'PBKDF2 reduces GPU throughput to ~10⁵',
+                                    note: 'Each guess requires 100,000 hash iterations.',
+                                    color: 'text-violet-300',
+                                },
+                                {
+                                    label: 'Time to brute-force',
+                                    value: '≫ 10⁵⁴ years',
+                                    sub: 'Universe age: 1.38 × 10¹⁰ years',
+                                    note: 'Even with all the energy in the universe.',
+                                    color: 'text-cyan-300',
+                                },
+                                {
+                                    label: 'Authentication guarantee',
+                                    value: 'GCM Tag',
+                                    sub: '128-bit authentication tag per message',
+                                    note: 'Tampered ciphertext is detected before decryption.',
+                                    color: 'text-emerald-300',
+                                },
+                            ].map((item) => (
+                                <div key={item.label} className="bg-black/40 border border-white/5 p-5 rounded-2xl hover:border-white/10 transition-colors space-y-1.5">
+                                    <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">{item.label}</p>
+                                    <p className={`text-2xl font-mono font-bold ${item.color}`}>{item.value}</p>
+                                    <p className="text-xs text-gray-400 font-mono">{item.sub}</p>
+                                    <p className="text-xs text-gray-600 leading-relaxed">{item.note}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Interactive Security Demo ─────────────────────── */}
+                    <div className="space-y-6 pt-4 border-t border-white/10">
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
+                            <Cpu className="w-6 h-6 text-red-400" />
+                            Interactive Security Demo
+                        </h2>
+                        <p className="text-gray-400 text-sm leading-relaxed">
+                            Step through the AES-256-GCM pipeline to see exactly how your message is transformed.
+                        </p>
+                        <InteractiveDemoSteps />
                     </div>
 
                     {/* Merged Mission & Use Cases */}
