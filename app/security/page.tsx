@@ -3,7 +3,7 @@
 import { GlassCard } from '@/components/GlassCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Lock, Key, Shield, FileDigit, ServerOff, Cpu, ArrowRight, Users, Database, Briefcase, Github } from 'lucide-react';
 
 const faqs = [
@@ -44,6 +44,32 @@ const pipelineSteps = [
 export default function SecurityInfo() {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
+    // Count-up animation for the 100,000 iterations figure
+    const [iterCount, setIterCount] = useState(0);
+    const iterRef = useRef<HTMLSpanElement>(null);
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    observer.disconnect();
+                    const target = 100000;
+                    const duration = 1200;
+                    const step = 16;
+                    const increment = Math.ceil(target / (duration / step));
+                    let current = 0;
+                    const timer = setInterval(() => {
+                        current = Math.min(current + increment, target);
+                        setIterCount(current);
+                        if (current >= target) clearInterval(timer);
+                    }, step);
+                }
+            },
+            { threshold: 0.3 }
+        );
+        if (iterRef.current) observer.observe(iterRef.current);
+        return () => observer.disconnect();
+    }, []);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -79,7 +105,12 @@ export default function SecurityInfo() {
                             <li><strong>Algorithm:</strong> AES (Advanced Encryption Standard) in GCM (Galois/Counter Mode).</li>
                             <li><strong>Key Size:</strong> 256-bit keys, ensuring military-grade encryption.</li>
                             <li><strong>Key Derivation:</strong> PBKDF2 with SHA-256 hash.</li>
-                            <li><strong>Iterations:</strong> 100,000 iterations to resist parallelized GPU brute-forcing.</li>
+                            <li>
+                                <strong>Iterations:</strong>{' '}
+                                <span ref={iterRef} className="tabular-nums font-bold text-white">
+                                    {iterCount.toLocaleString()}
+                                </span>{' '}iterations to resist parallelized GPU brute-forcing.
+                            </li>
                             <li><strong>Salt Size:</strong> 16 bytes, randomly generated per-message.</li>
                             <li><strong>IV Size:</strong> 12 bytes, randomly generated per-message.</li>
                         </ul>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { GlassCard } from '@/components/GlassCard';
 import { MagneticButton } from '@/components/MagneticButton';
-import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb, Sparkles, Eye, EyeOff, Check, Zap, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { extractTextFromImage, hideTextInImage } from '@/lib/stego';
 import jsQR from 'jsqr';
@@ -36,13 +36,15 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isPanic, setIsPanic] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const outputRef = useRef<HTMLDivElement>(null);
 
   // Dual Image Encryption Mode
   const [imageMode, setImageMode] = useState<'stego' | 'full'>('stego');
-  const [stagedImage, setStagedImage] = useState<{ data: string, name: string, type: string } | null>(null);
+  const [stagedImage, setStagedImage] = useState<{ data: string, name: string, type: string, size?: number } | null>(null);
 
   // File Upload Ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -147,6 +149,18 @@ export default function Home() {
     }, 4000);
     return () => clearInterval(interval);
   }, [mode, encodePlaceholders.length]);
+
+  // Ctrl+Enter / Cmd+Enter keyboard shortcut to trigger Lock/Unlock
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('main-process-btn')?.click();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!output) {
@@ -353,6 +367,13 @@ export default function Home() {
         setOutput(result);
         toast.success('Message unlocked successfully.');
       }
+
+      // Auto-scroll to output panel on mobile/tablet after processing
+      setTimeout(() => {
+        if (typeof window !== 'undefined' && window.innerWidth < 1024 && outputRef.current) {
+          outputRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
     } catch (err) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : 'An error occurred during processing.');
@@ -370,6 +391,8 @@ export default function Home() {
     triggerHaptic();
     toast.success('Copied to clipboard!');
     setMobileMenuOpen(false);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   const generateShareLink = () => {
@@ -497,7 +520,8 @@ export default function Home() {
               setStagedImage({
                 data: event.target.result as string,
                 name: file.name,
-                type: file.type
+                type: file.type,
+                size: file.size,
               });
               setText(''); // Clear main box
               toast.success('Image staged. Select your encryption preference below.');
@@ -570,6 +594,20 @@ export default function Home() {
         <p className="text-gray-400 max-w-lg mx-auto text-base sm:text-lg pt-2 leading-relaxed px-4 sm:px-0">
           Phantom uses AES-256-GCM to lock your messages before they ever leave your device. <br className="hidden sm:block" />No servers. No databases. Zero trace.
         </p>
+        {/* Try Demo Button */}
+        <button
+          onClick={() => {
+            setText('Top secret intel: The access code is PHANTOM-9-ALPHA. Do not share under any circumstances.');
+            setPassword('phantom123');
+            setMode('encode');
+            setHasInteracted(true);
+            toast.info('Demo loaded! Hit “Lock Now” or press Ctrl+Enter.');
+          }}
+          className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/40 px-5 py-2.5 rounded-full transition-all mt-2 group"
+        >
+          <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+          Try a Live Demo
+        </button>
       </div>
 
       <div className="w-full max-w-7xl mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
@@ -695,11 +733,19 @@ export default function Home() {
                       <ImageIcon className="w-8 h-8 text-indigo-400 opacity-80" />
                       <div className="text-center">
                         <p className="text-indigo-200 font-bold mb-1 truncate max-w-xs">{stagedImage.name}</p>
-                        <p className="text-xs text-indigo-400/60">Image successfully staged for processing</p>
+                        <p className="text-xs text-indigo-400/60">
+                          {stagedImage.size ? `${(stagedImage.size / 1024).toFixed(1)} KB` : 'Image'} &middot; staged for processing
+                        </p>
                       </div>
                     </div>
                   )}
                 </div>
+                {/* Character counter */}
+                {!stagedImage && text && (
+                  <div className="text-right text-xs text-gray-600 font-mono mt-1.5 pr-1">
+                    {text.length.toLocaleString()} chars
+                  </div>
+                )}
 
                 {isDragging && !stagedImage && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-6">
@@ -762,27 +808,46 @@ export default function Home() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                {/* Password Strength Indicator */}
+                {/* Password Strength Indicator + Text Label */}
                 {password.length > 0 && (
-                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden mt-2">
-                    <div
-                      className={`h-full transition-all duration-500 ${passwordStrength <= 20 ? 'bg-red-500 w-[20%]' :
-                        passwordStrength <= 40 ? 'bg-orange-500 w-[40%]' :
-                          passwordStrength <= 60 ? 'bg-yellow-500 w-[60%]' :
-                            passwordStrength <= 80 ? 'bg-emerald-400 w-[80%]' :
-                              'bg-cyan-400 w-full'
-                        }`}
-                    />
-                  </div>
+                  <>
+                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden mt-2">
+                      <div
+                        className={`h-full transition-all duration-500 ${passwordStrength <= 20 ? 'bg-red-500 w-[20%]' :
+                          passwordStrength <= 40 ? 'bg-orange-500 w-[40%]' :
+                            passwordStrength <= 60 ? 'bg-yellow-500 w-[60%]' :
+                              passwordStrength <= 80 ? 'bg-emerald-400 w-[80%]' :
+                                'bg-cyan-400 w-full'
+                          }`}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-1 px-0.5">
+                      <span className={`text-xs font-semibold ${passwordStrength <= 20 ? 'text-red-400' :
+                        passwordStrength <= 40 ? 'text-orange-400' :
+                          passwordStrength <= 60 ? 'text-yellow-400' :
+                            passwordStrength <= 80 ? 'text-emerald-400' :
+                              'text-cyan-400'
+                        }`}>
+                        {passwordStrength <= 20 ? 'Weak' :
+                          passwordStrength <= 40 ? 'Fair' :
+                            passwordStrength <= 60 ? 'Moderate' :
+                              passwordStrength <= 80 ? 'Strong' :
+                                'Very Strong'}
+                      </span>
+                      <span className="text-xs text-gray-600 font-mono">{password.length} chars</span>
+                    </div>
+                  </>
                 )}
               </div>
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <MagneticButton
+                  id="main-process-btn"
                   onClick={handleProcess}
                   disabled={loading}
                   className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold py-5 px-6 rounded-2xl flex items-center justify-center gap-3 text-lg transition-colors disabled:opacity-50 disabled:pointer-events-none group shadow-[0_0_20px_rgba(99,102,241,0.3)] shadow-indigo-500/25 z-20"
+                  title={`${mode === 'encode' ? 'Lock' : 'Unlock'} (Ctrl+Enter)`}
                 >
                   {loading ? (
                     <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -824,7 +889,7 @@ export default function Home() {
         </div>
 
         {/* Right Column: Output Section */}
-        <div className="w-full flex-1">
+        <div ref={outputRef} className="w-full flex-1 scroll-mt-24">
           <AnimatePresence mode="popLayout">
             {output ? (
               <motion.div
@@ -881,11 +946,14 @@ export default function Home() {
                       </button>
                       <button
                         onClick={copyToClipboard}
-                        className="flex items-center gap-2 text-xs font-medium text-white transition-colors bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30 px-3 py-1.5 rounded-md shadow-lg"
+                        className={`flex items-center gap-2 text-xs font-medium transition-colors px-3 py-1.5 rounded-md shadow-lg border ${isCopied
+                          ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/30'
+                          : 'text-white bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30'
+                          }`}
                         title="Copy to clipboard"
                       >
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy</span>
+                        {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{isCopied ? 'Copied!' : 'Copy'}</span>
                       </button>
                     </div>
 
@@ -924,7 +992,13 @@ export default function Home() {
                       <span className="hidden md:inline">|</span>
                       <span className="hidden md:inline">🔄 Derivation: <span className="text-white/80 font-bold">PBKDF2 (100k)</span></span>
                     </div>
-                    <div>Status: <span className="text-emerald-400 font-bold">SECURED</span></div>
+                    <div className="flex items-center gap-3">
+                      {mode === 'decode' && output && (() => {
+                        const words = output.trim().split(/\s+/).filter(Boolean).length;
+                        return <span className="text-indigo-400/50">{words} words · {output.length.toLocaleString()} chars</span>;
+                      })()}
+                      <span>Status: <span className="text-emerald-400 font-bold">SECURED</span></span>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -960,44 +1034,62 @@ export default function Home() {
               <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><FileText className="w-4 h-4 text-cyan-400" /> JSON PAYLOADS</div>
               <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><Key className="w-4 h-4 text-yellow-500" /> MNEMONIC SEEDS</div>
             </React.Fragment>
+          ))}        </div>
+      </div>
+
+      {/* ── Features Strip ───────────────────────────── */}
+      <div className="w-full max-w-5xl py-6 px-4">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {[
+            { icon: <Zap className="w-3.5 h-3.5" />, label: 'Instant Encryption', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
+            { icon: <WifiOff className="w-3.5 h-3.5" />, label: 'Works Offline · PWA', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+            { icon: <ImageIcon className="w-3.5 h-3.5" />, label: 'Steganography', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+            { icon: <ShieldCheck className="w-3.5 h-3.5" />, label: 'Zero Knowledge', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+            { icon: <QrCode className="w-3.5 h-3.5" />, label: 'QR Code Support', color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+          ].map(f => (
+            <div key={f.label} className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border ${f.color}`}>
+              {f.icon}{f.label}
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Simple How It Works Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="w-full max-w-4xl pt-16 pb-8 px-2 sm:px-0"
-      >
-        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-10 text-white tracking-tight">How It Works</h2>
+      {/* Simple How It Works Section — scroll-triggered whileInView */}
+      <div className="w-full max-w-4xl pt-10 pb-8 px-2 sm:px-0">
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-2xl sm:text-3xl font-bold text-center mb-10 text-white tracking-tight"
+        >
+          How It Works
+        </motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex flex-col items-center text-center space-y-5 p-6 sm:p-8 bg-white/[0.02] rounded-3xl border border-white/5 hover:bg-white/[0.04] transition-all hover:-translate-y-1">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 rotate-3 shadow-lg shadow-indigo-500/10">
-              <FileText className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold text-white tracking-tight">1. Write Message</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">Type the secret message you want to send in the box above.</p>
-          </div>
-          <div className="flex flex-col items-center text-center space-y-5 p-6 sm:p-8 bg-white/[0.02] rounded-3xl border border-white/5 hover:bg-white/[0.04] transition-all hover:-translate-y-1 delay-75">
-            <div className="w-16 h-16 rounded-2xl bg-violet-500/20 flex items-center justify-center text-violet-400 -rotate-3 shadow-lg shadow-violet-500/10">
-              <Key className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold text-white tracking-tight">2. Add Password</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">Choose a password. Only someone with this exact password can read the message.</p>
-          </div>
-          <div className="flex flex-col items-center text-center space-y-5 p-6 sm:p-8 bg-white/[0.02] rounded-3xl border border-white/5 hover:bg-white/[0.04] transition-all hover:-translate-y-1 delay-150">
-            <div className="w-16 h-16 rounded-2xl bg-cyan-500/20 flex items-center justify-center text-cyan-400 rotate-3 shadow-lg shadow-cyan-500/10">
-              <Share2 className="w-7 h-7" />
-            </div>
-            <h3 className="text-xl font-bold text-white tracking-tight">3. Share the Code</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">Lock it, copy the scrambled code, and share it safely anywhere.</p>
-          </div>
+          {[
+            { icon: <FileText className="w-7 h-7" />, title: '1. Write Message', desc: 'Type the secret message you want to send in the box above.', color: 'bg-indigo-500/20 text-indigo-400 shadow-indigo-500/10', rotate: 'rotate-3' },
+            { icon: <Key className="w-7 h-7" />, title: '2. Add Password', desc: 'Choose a password. Only someone with this exact password can read the message.', color: 'bg-violet-500/20 text-violet-400 shadow-violet-500/10', rotate: '-rotate-3' },
+            { icon: <Share2 className="w-7 h-7" />, title: '3. Share the Code', desc: 'Lock it, copy the scrambled code, and share it safely anywhere.', color: 'bg-cyan-500/20 text-cyan-400 shadow-cyan-500/10', rotate: 'rotate-3' },
+          ].map((card, i) => (
+            <motion.div
+              key={card.title}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.12 }}
+              className="flex flex-col items-center text-center space-y-5 p-6 sm:p-8 bg-white/[0.02] rounded-3xl border border-white/5 hover:bg-white/[0.04] transition-all hover:-translate-y-1"
+            >
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${card.color} ${card.rotate}`}>
+                {card.icon}
+              </div>
+              <h3 className="text-xl font-bold text-white tracking-tight">{card.title}</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">{card.desc}</p>
+            </motion.div>
+          ))}
         </div>
-      </motion.div>
+      </div>
 
-      {/* NEW: Dual Image Encryption Section (Migrated from How It Works) */}
+      {/* NEW: Dual Image Encryption Section */}
       <div className="text-center space-y-6 pt-16 sm:pt-20 px-4 w-full max-w-4xl">
         <h2 className="text-2xl sm:text-3xl font-bold text-white flex justify-center items-center gap-3 tracking-tight">
           <ImageIcon className="text-indigo-400 w-8 h-8" />
@@ -1274,6 +1366,6 @@ export default function Home() {
           />
         )}
       </AnimatePresence>
-    </motion.div>
+    </motion.div >
   );
 }

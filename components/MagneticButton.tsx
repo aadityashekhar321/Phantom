@@ -8,9 +8,12 @@ interface MagneticButtonProps {
   className?: string;
   onClick?: () => void;
   disabled?: boolean;
+  id?: string;
+  title?: string;
+  'aria-label'?: string;
 }
 
-export const MagneticButton: React.FC<MagneticButtonProps> = ({ children, className = '', onClick, disabled }) => {
+export const MagneticButton: React.FC<MagneticButtonProps> = ({ children, className = '', onClick, disabled, id, title }) => {
   const ref = useRef<HTMLButtonElement>(null);
 
   const x = useMotionValue(0);
@@ -45,6 +48,8 @@ export const MagneticButton: React.FC<MagneticButtonProps> = ({ children, classN
   return (
     <motion.button
       ref={ref}
+      id={id}
+      title={title}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={onClick}
