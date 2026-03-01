@@ -9,27 +9,31 @@ import { ChevronDown, Lock, Key, Shield, FileDigit, ServerOff, Cpu, ArrowRight, 
 const faqs = [
     {
         question: "Can Phantom recover my password?",
-        answer: "No. Phantom is a zero-knowledge local client. We do not have servers, databases, or password reset capabilities. If you lose your Secret Key, your data is mathematically impossible to recover."
+        answer: "No — by design. Phantom is a zero-knowledge stateless client. No servers, no databases, no password reset. Your Secret Key holds the only mathematical path to your data. Lose the key and the ciphertext remains permanently locked. This is not a limitation — it is the entire point."
     },
     {
-        question: "Does Phantom track my IP or usage?",
-        answer: "Never. We do not use analytics, we do not track IP addresses, and we do not store cookies. Your privacy is absolute."
+        question: "Does Phantom track me or log my usage?",
+        answer: "Never. Phantom uses zero analytics, zero cookies, zero IP logging, and zero telemetry. Once the static page loads, no outbound network requests are made. There is nothing to track because nothing is transmitted."
     },
     {
         question: "Are my files uploaded to a server for encryption?",
-        answer: "No. 100% of the cryptographic lifting happens entirely within your device's RAM (Random Access Memory) using your browser's native Web Crypto API. Nothing is ever sent over the network."
+        answer: "No. Every cryptographic operation runs entirely inside your browser's RAM using the native Web Crypto API. Your data never crosses the network boundary. Not even a single byte. You can verify this by disconnecting from the internet and using Phantom — it works identically."
     },
     {
-        question: "Why did my Steganography Image fail to decode?",
-        answer: "If you send a steganography image over WhatsApp, X (Twitter), Discord, or iMessage, those platforms aggressively compress the image to save space. This compression permanently destroys the hidden pixel data. You must send Carrier Images as 'Files' or via platforms that do not compress (like Signal, Telegram uncompressed, or email attachments)."
+        question: "Why does my Steganography image fail to decode?",
+        answer: "Platforms like WhatsApp, Twitter/X, Discord, and iMessage aggressively re-compress and re-encode images to reduce file size. This process permanently destroys the LSB pixel data where your hidden message is stored. Always share steganography carrier images as Files (not photos) via platforms that preserve binary losslessly: Signal, Telegram (with 'Send as File'), or direct email attachments."
     },
     {
-        question: "How do I install Phantom as an app?",
-        answer: "Phantom is a Progressive Web App (PWA). On mobile Safari, tap 'Share' then 'Add to Home Screen'. On Android Chrome or Desktop Chrome/Edge, click the install icon in your URL address bar. Once installed, it works 100% completely offline."
+        question: "How do I install Phantom as an offline app?",
+        answer: "Phantom is a Progressive Web App (PWA). On iOS, open it in Safari → tap 'Share' → 'Add to Home Screen'. On Android, open it in Chrome → tap the menu → 'Add to Home Screen'. On Desktop Chrome or Edge, click the install icon in the address bar. Once installed, Phantom works 100% offline — no network connection required."
     },
     {
         question: "What is a .phantom Vault file?",
-        answer: "When you lock data, you can export it instantly as a .phantom file to store on a USB drive or local hard drive. To decode it, simply drag and drop the .phantom file into the home page and provide the password."
+        answer: "A .phantom file is a self-contained encrypted bundle. When you lock data, you can export everything (ciphertext, IV, and salt metadata) into a single .phantom file for offline storage on a USB drive, hard disk, or secure archive. To decrypt, drag the .phantom file back into the Vault and provide the password."
+    },
+    {
+        question: "Is Phantom open source? Can I audit the code?",
+        answer: "Yes. Phantom is fully open source on GitHub. You can read every line of the cryptographic logic, verify no network calls are made, and confirm the security model for yourself. Trust shouldn't be assumed — it should be verified."
     }
 ];
 
@@ -93,7 +97,9 @@ export default function SecurityInfo() {
                     </div>
                 </div>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tighter text-red-400">Architecture &amp; Trust</h1>
-                <p className="text-gray-400 text-base sm:text-lg">The mathematical foundation and mission of Phantom.</p>
+                <p className="text-gray-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
+                    The mathematics, design decisions, and security guarantees that make Phantom trustworthy by construction — not by promise.
+                </p>
             </div>
 
             <GlassCard className="max-w-3xl mx-auto px-5 py-8 sm:px-10 sm:py-12">
@@ -102,17 +108,17 @@ export default function SecurityInfo() {
                     <div className="space-y-8 sm:space-y-10">
                         <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6">Technical Specifications</h2>
                         <ul className="list-disc list-inside space-y-5 sm:space-y-6 text-gray-300 text-base leading-relaxed">
-                            <li><strong>Algorithm:</strong> AES (Advanced Encryption Standard) in GCM (Galois/Counter Mode).</li>
-                            <li><strong>Key Size:</strong> 256-bit keys, ensuring military-grade encryption.</li>
-                            <li><strong>Key Derivation:</strong> PBKDF2 with SHA-256 hash.</li>
+                            <li><strong>Algorithm:</strong> AES-256 in GCM (Galois/Counter Mode) — authenticated encryption that simultaneously provides confidentiality and tamper-detection.</li>
+                            <li><strong>Key Size:</strong> 256-bit keys. At current compute speeds, a brute-force attack would require more energy than exists in the observable universe.</li>
+                            <li><strong>Key Derivation:</strong> PBKDF2 with SHA-256 — makes each attempt at guessing your password computationally expensive.</li>
                             <li>
                                 <strong>Iterations:</strong>{' '}
                                 <span ref={iterRef} className="tabular-nums font-bold text-white">
                                     {iterCount.toLocaleString()}
-                                </span>{' '}iterations to resist parallelized GPU brute-forcing.
+                                </span>{' '}iterations. Each wrong password guess must repeat this entire process — making parallelized GPU attacks orders of magnitude slower.
                             </li>
-                            <li><strong>Salt Size:</strong> 16 bytes, randomly generated per-message.</li>
-                            <li><strong>IV Size:</strong> 12 bytes, randomly generated per-message.</li>
+                            <li><strong>Salt:</strong> 16 bytes, randomly generated per-message — ensures that identical passwords produce entirely different keys each time.</li>
+                            <li><strong>IV (Initialization Vector):</strong> 12 bytes, randomly generated per-message — guarantees that encrypting the same plaintext twice never produces the same ciphertext.</li>
                         </ul>
                     </div>
 

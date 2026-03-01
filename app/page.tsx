@@ -592,16 +592,16 @@ export default function Home() {
           Military-Grade <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Encryption</span>
         </h1>
         <p className="text-gray-400 max-w-lg mx-auto text-base sm:text-lg pt-2 leading-relaxed px-4 sm:px-0">
-          Phantom uses AES-256-GCM to lock your messages before they ever leave your device. <br className="hidden sm:block" />No servers. No databases. Zero trace.
+          Your messages are locked with AES-256-GCM <em>before they leave your device</em>. No servers see your data. No passwords are stored.  <span className="text-indigo-300 font-medium">Ever.</span>
         </p>
         {/* Try Demo Button */}
         <button
           onClick={() => {
-            setText('Top secret intel: The access code is PHANTOM-9-ALPHA. Do not share under any circumstances.');
-            setPassword('phantom123');
+            setText('CLASSIFIED: The recovery phrase is “abandon ability above absent absorb abstract” — do not share under any circumstances.');
+            setPassword('phantom-demo');
             setMode('encode');
             setHasInteracted(true);
-            toast.info('Demo loaded! Hit “Lock Now” or press Ctrl+Enter.');
+            toast.info('Demo loaded! Press Ctrl+Enter or hit “Lock Now” to encrypt.');
           }}
           className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/40 px-5 py-2.5 rounded-full transition-all mt-2 group"
         >
@@ -1022,7 +1022,7 @@ export default function Home() {
       <div className="w-full max-w-4xl pt-8 pb-4 px-4 overflow-hidden relative">
         <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-[#050510] to-transparent z-10 pointer-events-none" />
         <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-[#050510] to-transparent z-10 pointer-events-none" />
-        <p className="text-center text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-6">Built To Secure Any Payload</p>
+        <p className="text-center text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-6">Engineered to Secure Any Payload</p>
 
         <div className="flex animate-[marquee_20s_linear_infinite] w-max gap-8 md:gap-16 items-center flex-nowrap opacity-60 hover:opacity-100 transition-opacity">
           {/* Double the items to create a seamless infinite scroll effect */}
@@ -1067,9 +1067,9 @@ export default function Home() {
         </motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { icon: <FileText className="w-7 h-7" />, title: '1. Write Message', desc: 'Type the secret message you want to send in the box above.', color: 'bg-indigo-500/20 text-indigo-400 shadow-indigo-500/10', rotate: 'rotate-3' },
-            { icon: <Key className="w-7 h-7" />, title: '2. Add Password', desc: 'Choose a password. Only someone with this exact password can read the message.', color: 'bg-violet-500/20 text-violet-400 shadow-violet-500/10', rotate: '-rotate-3' },
-            { icon: <Share2 className="w-7 h-7" />, title: '3. Share the Code', desc: 'Lock it, copy the scrambled code, and share it safely anywhere.', color: 'bg-cyan-500/20 text-cyan-400 shadow-cyan-500/10', rotate: 'rotate-3' },
+            { icon: <FileText className="w-7 h-7" />, title: '1. Write Your Secret', desc: 'Type your message, paste sensitive data, or drop a file. Phantom handles plain text, images, documents — anything you need to protect.', color: 'bg-indigo-500/20 text-indigo-400 shadow-indigo-500/10', rotate: 'rotate-3' },
+            { icon: <Key className="w-7 h-7" />, title: '2. Set Your Key', desc: 'Choose a strong, memorable password. This key never leaves your device — only you can unlock what you lock.', color: 'bg-violet-500/20 text-violet-400 shadow-violet-500/10', rotate: '-rotate-3' },
+            { icon: <Share2 className="w-7 h-7" />, title: '3. Share Safely', desc: 'Copy the ciphertext, export a .phantom vault file, generate a QR code, or share via a one-time secure link.', color: 'bg-cyan-500/20 text-cyan-400 shadow-cyan-500/10', rotate: 'rotate-3' },
           ].map((card, i) => (
             <motion.div
               key={card.title}
