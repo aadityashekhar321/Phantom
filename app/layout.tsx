@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Outfit, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
 
@@ -12,6 +13,12 @@ export const metadata: Metadata = {
   title: 'Phantom | Secure & Invisible Communication',
   description: 'Convert messages into unreadable encoded text securely entirely in your browser using AES-256-GCM.',
   manifest: '/manifest.json',
+  keywords: ['encryption', 'AES-256', 'privacy', 'steganography', 'zero knowledge', 'secure messaging'],
+  openGraph: {
+    title: 'Phantom | Military-Grade Encryption',
+    description: 'Lock messages with AES-256-GCM. Zero servers. Zero trace. Runs entirely in your browser.',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({
@@ -32,10 +39,12 @@ export default function RootLayout({
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col pt-16 pb-32 items-center w-full px-4 sm:px-6">
-          <div className="max-w-4xl w-full">
+          <div className="max-w-5xl w-full">
             {children}
           </div>
         </main>
+
+        <Footer />
 
         <Toaster theme="dark" position="bottom-center" toastOptions={{ className: 'font-sans' }} />
         <Analytics />

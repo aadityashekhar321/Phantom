@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { GlassCard } from '@/components/GlassCard';
 import { MagneticButton } from '@/components/MagneticButton';
-import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb, Sparkles } from 'lucide-react';
+import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { extractTextFromImage, hideTextInImage } from '@/lib/stego';
 import jsQR from 'jsqr';
@@ -35,6 +35,7 @@ export default function Home() {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isPanic, setIsPanic] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -557,20 +558,11 @@ export default function Home() {
       {/* Header section */}
       <div className="text-center space-y-4">
         <div className="flex justify-center mb-6 relative w-40 h-40 mx-auto">
-          {/* Ambient Pulse Behind Image */}
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-500 blur-2xl rounded-[3rem] opacity-30"
-            animate={{ opacity: [0.15, 0.4, 0.15], scale: [0.85, 1.15, 0.85] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-          />
-          {/* Floating Image Container */}
-          <motion.div
-            animate={{ y: [-8, 8, -8] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="relative z-10 w-full h-full"
-          >
+          {/* Static ambient ring — no infinite loop for performance */}
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-500 blur-2xl rounded-[3rem] opacity-20" />
+          <div className="relative z-10 w-full h-full">
             <Image src="/hero.webp" alt="Phantom Hero Illustration" fill className="rounded-3xl drop-shadow-[0_0_30px_rgba(99,102,241,0.3)] object-cover" priority />
-          </motion.div>
+          </div>
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight sm:tracking-tighter">
           Military-Grade <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Encryption</span>
@@ -751,13 +743,25 @@ export default function Home() {
                 <div id="password-input-aura" className="absolute inset-0 rounded-2xl pointer-events-none z-20 opacity-0" />
 
                 <label className="text-sm font-semibold text-indigo-200 ml-1 block">Secret Key (Password)</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={handlePasswordChange}
-                  placeholder="Enter a strong password..."
-                  className="w-full relative z-10 bg-black/80 border border-white/10 rounded-2xl p-5 text-base sm:text-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] transition-all font-mono tracking-wider"
-                />
+                <div className="relative">
+                  <input
+                    id="password-field"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={handlePasswordChange}
+                    placeholder="Enter a strong password..."
+                    aria-label="Secret Key Password"
+                    className="w-full relative z-10 bg-black/80 border border-white/10 rounded-2xl p-5 pr-14 text-base sm:text-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] transition-all font-mono tracking-wider"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 text-gray-500 hover:text-indigo-300 transition-colors focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
                 {/* Password Strength Indicator */}
                 {password.length > 0 && (
                   <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden mt-2">
@@ -810,7 +814,7 @@ export default function Home() {
                   <ShieldCheck className="w-3.5 h-3.5" />
                   AES-256-GCM
                 </div>
-                <a href="https://github.com" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors bg-white/5 px-2.5 py-1 rounded-full border border-white/10 cursor-pointer">
+                <a href="https://github.com/aadityashekhar321/Phantom" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors bg-white/5 px-2.5 py-1 rounded-full border border-white/10 cursor-pointer">
                   <Github className="w-3.5 h-3.5" />
                   Open-Source
                 </a>
@@ -906,7 +910,7 @@ export default function Home() {
                   )}
 
                   <div className="p-4 sm:p-6 relative max-w-full">
-                    <p className={`font-mono text-xs sm:text-sm md:text-base break-all select-all leading-relaxed max-h-60 overflow-y-auto w-full custom-scrollbar transition-colors duration-300 ${isScrambling ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-gray-300'}`}>
+                    <p className={`font-mono text-xs sm:text-sm md:text-base break-all select-all leading-relaxed max-h-[clamp(15rem,30vh,40rem)] overflow-y-auto w-full custom-scrollbar transition-colors duration-300 ${isScrambling ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-gray-300'}`}>
                       {displayedOutput}
                     </p>
                   </div>
@@ -1245,10 +1249,11 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Global Panic Button */}
+      {/* Global Panic Button — bottom-20 on mobile so it clears the bottom safe area */}
       <button
         onClick={handlePanic}
-        className="fixed bottom-6 right-6 z-[90] flex items-center justify-center p-4 bg-red-600/10 hover:bg-red-600 border border-red-500/30 hover:border-red-500 rounded-full text-red-500 hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(220,38,38,0.1)] hover:shadow-[0_0_40px_rgba(220,38,38,0.6)] backdrop-blur-md group overflow-hidden"
+        aria-label="Emergency Memory Wipe"
+        className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-[90] flex items-center justify-center p-4 bg-red-600/10 hover:bg-red-600 border border-red-500/30 hover:border-red-500 rounded-full text-red-500 hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(220,38,38,0.1)] hover:shadow-[0_0_40px_rgba(220,38,38,0.6)] backdrop-blur-md group overflow-hidden"
         title="Emergency Memory Wipe"
       >
         <Bomb className="w-5 h-5 z-10" />
