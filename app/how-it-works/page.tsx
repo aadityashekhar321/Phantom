@@ -132,8 +132,7 @@ export default function HowItWorks() {
                         <h3 className="text-xl font-bold text-white">1. Steganography</h3>
                         <p className="text-indigo-300 font-semibold text-sm uppercase tracking-wider">Hide Text Inside an Image</p>
                         <p className="text-gray-400 text-sm leading-relaxed">
-                            Phantom injects your scrambled secret message directly into the pixel data of an innocent-looking picture (like a photo of your cat).
-                            The image looks 100% normal to the human eye, but acts as a carrier for your secret.
+                            Phantom injects your scrambled secret message directly into an innocent-looking picture. You can choose <strong>Invisible Mode</strong> for perfect secrecy (send as a file only), or <strong>QR Overlay Mode</strong> which adds a visible QR code that safely survives WhatsApp and Telegram photo compression.
                         </p>
                     </div>
 
@@ -150,32 +149,68 @@ export default function HowItWorks() {
                     </div>
                 </div>
 
-                {/* Feature Comparison Table */}
-                <div className="mt-12 overflow-x-auto bg-black/40 border border-white/10 rounded-2xl">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-white/5 border-b border-white/10">
-                                <th className="p-4 text-sm font-semibold text-gray-300">Mode</th>
-                                <th className="p-4 text-sm font-semibold text-gray-300 hidden sm:table-cell">How it Works</th>
-                                <th className="p-4 text-sm font-semibold text-gray-300">Visual Output</th>
-                                <th className="p-4 text-sm font-semibold text-gray-300 hidden md:table-cell">Best For</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/10 text-sm">
-                            <tr className="hover:bg-white/[0.02] transition-colors">
-                                <td className="p-4 font-semibold text-indigo-400">Steganography</td>
-                                <td className="p-4 text-gray-400 hidden sm:table-cell">Hides text mathematically in pixel LSBs</td>
-                                <td className="p-4 text-gray-300">Looks identical to original</td>
-                                <td className="p-4 text-gray-400 hidden md:table-cell">Passing messages in plain sight</td>
-                            </tr>
-                            <tr className="hover:bg-white/[0.02] transition-colors">
-                                <td className="p-4 font-semibold text-cyan-400">Full Encryption</td>
-                                <td className="p-4 text-gray-400 hidden sm:table-cell">Scrambles the entire raw file into ciphertext</td>
-                                <td className="p-4 text-gray-300">Unreadable text block (.txt)</td>
-                                <td className="p-4 text-gray-400 hidden md:table-cell">Archiving or locking images completely</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                {/* Feature Comparison — mobile cards, desktop table */}
+                <div className="mt-12 space-y-4 md:space-y-0">
+                    {/* Mobile Card View (< md) */}
+                    <div className="md:hidden space-y-3">
+                        {[
+                            {
+                                mode: 'Steganography',
+                                color: 'text-indigo-400',
+                                border: 'border-indigo-500/20',
+                                bg: 'bg-indigo-500/5',
+                                how: 'Hides text mathematically in pixel LSBs',
+                                visual: 'Looks identical to original',
+                                best: 'Passing messages in plain sight'
+                            },
+                            {
+                                mode: 'Full Encryption',
+                                color: 'text-cyan-400',
+                                border: 'border-cyan-500/20',
+                                bg: 'bg-cyan-500/5',
+                                how: 'Scrambles the entire raw file into ciphertext',
+                                visual: 'Unreadable text block (.txt)',
+                                best: 'Archiving or locking images completely'
+                            }
+                        ].map(row => (
+                            <div key={row.mode} className={`rounded-2xl border ${row.border} ${row.bg} p-4 space-y-2`}>
+                                <p className={`font-bold text-base ${row.color}`}>{row.mode}</p>
+                                <div className="text-sm text-gray-400 space-y-1.5">
+                                    <p><span className="text-gray-500 font-semibold">Method: </span>{row.how}</p>
+                                    <p><span className="text-gray-500 font-semibold">Output: </span>{row.visual}</p>
+                                    <p><span className="text-gray-500 font-semibold">Best for: </span>{row.best}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop Table View (>= md) */}
+                    <div className="hidden md:block overflow-hidden bg-black/40 border border-white/10 rounded-2xl">
+                        <table className="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr className="bg-white/5 border-b border-white/10">
+                                    <th className="p-4 font-semibold text-gray-300">Mode</th>
+                                    <th className="p-4 font-semibold text-gray-300">How it Works</th>
+                                    <th className="p-4 font-semibold text-gray-300">Visual Output</th>
+                                    <th className="p-4 font-semibold text-gray-300">Best For</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/10">
+                                <tr className="hover:bg-white/[0.02] transition-colors">
+                                    <td className="p-4 font-semibold text-indigo-400">Steganography</td>
+                                    <td className="p-4 text-gray-400">Hides text mathematically in pixel LSBs</td>
+                                    <td className="p-4 text-gray-300">Looks identical to original</td>
+                                    <td className="p-4 text-gray-400">Passing messages in plain sight</td>
+                                </tr>
+                                <tr className="hover:bg-white/[0.02] transition-colors">
+                                    <td className="p-4 font-semibold text-cyan-400">Full Encryption</td>
+                                    <td className="p-4 text-gray-400">Scrambles the entire raw file into ciphertext</td>
+                                    <td className="p-4 text-gray-300">Unreadable text block (.txt)</td>
+                                    <td className="p-4 text-gray-400">Archiving or locking images completely</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </GlassCard>
         </motion.div>

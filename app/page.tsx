@@ -4,14 +4,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { GlassCard } from '@/components/GlassCard';
 import { MagneticButton } from '@/components/MagneticButton';
-import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb, Sparkles, Eye, EyeOff, Check, Zap, WifiOff, Shuffle, WrapText, Clock, AlignLeft, Files, GripVertical } from 'lucide-react';
+import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb, Sparkles, Eye, EyeOff, Check, Zap, WifiOff, Shuffle, WrapText, Clock, AlignLeft, Files } from 'lucide-react';
 import { HistoryPanel, type HistoryEntry } from '@/components/HistoryPanel';
 import { toast } from 'sonner';
-import { extractTextFromImage, hideTextInImage } from '@/lib/stego';
+import { extractTextFromImage, hideTextInImage, hideTextInImageQR } from '@/lib/stego';
 import jsQR from 'jsqr';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Heavy component lazy-loaded (only loaded when QR button is clicked)
 const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), {
@@ -39,121 +39,20 @@ export default function Home() {
   const [showPassword, setShowPassword] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
-  // Category 1: Word-wrap, history, split stats, drag-to-reorder, structural diff, input scramble
+  // Category 1: Word-wrap, history, split stats, drag-to-reorder
   const [wrapOutput, setWrapOutput] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
   const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([]);
   const [splitStats, setSplitStats] = useState<{ inputLen: number; outputLen: number } | null>(null);
-  const [actionOrder, setActionOrder] = useState<string[]>(['save', 'link', 'qr', 'txt', 'copy']);
-  const [showStructuralDiff, setShowStructuralDiff] = useState(false);
-  const [isProcessingInput, setIsProcessingInput] = useState(false);
-  const [inputScrambleText, setInputScrambleText] = useState('');
 
-  // Category 2: Share expiry, text diff, batch files, prev decoded, WebAuthn, Dark Web Mode
+  // Category 2: Share expiry, text diff, batch files, prev decoded
   const [shareExpiry, setShareExpiry] = useState<'1h' | '24h' | '7d' | 'none'>('none');
   const [prevDecoded, setPrevDecoded] = useState<string | null>(null);
   const [showDiff, setShowDiff] = useState(false);
-  const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
-  const [biometricVerified, setBiometricVerified] = useState(false);
-  const [darkWebMode, setDarkWebMode] = useState(false);
   const batchInputRef = useRef<HTMLInputElement>(null);
   const [batchFiles, setBatchFiles] = useState<{ name: string; data: string }[]>([]);
   const [batchLoading, setBatchLoading] = useState(false);
   const [batchPassword, setBatchPassword] = useState('');
-
-  useEffect(() => {
-    if (darkWebMode) {
-      const style = document.createElement('style');
-      style.id = 'dark-web-mode-styles';
-      style.innerHTML = `
-        * { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important; }
-        [style*="stardust.png"] { background-image: none !important; }
-      `;
-      document.head.appendChild(style);
-      document.body.classList.add('dark-web-mode');
-      toast.info('Dark Web Mode enabled: External assets blocked.');
-    } else {
-      document.getElementById('dark-web-mode-styles')?.remove();
-      document.body.classList.remove('dark-web-mode');
-    }
-  }, [darkWebMode]);
-
-  const handleRegisterBiometrics = async () => {
-    try {
-      if (!window.PublicKeyCredential) {
-        toast.error('WebAuthn not supported in this browser.');
-        return;
-      }
-      const challenge = new Uint8Array(32);
-      window.crypto.getRandomValues(challenge);
-
-      const credential = await navigator.credentials.create({
-        publicKey: {
-          challenge,
-          rp: { name: 'Phantom Vault' },
-          user: {
-            id: new Uint8Array(16),
-            name: 'vault-user',
-            displayName: 'Vault User'
-          },
-          pubKeyCredParams: [{ alg: -7, type: 'public-key' }], // ES256
-          authenticatorSelection: { userVerification: 'required' },
-          timeout: 60000
-        }
-      }) as PublicKeyCredential;
-
-      if (credential) {
-        // Convert ArrayBuffer to Base64 without spread operator for wide compatibility
-        const rawId = new Uint8Array(credential.rawId);
-        let binary = '';
-        for (let i = 0; i < rawId.byteLength; i++) {
-          binary += String.fromCharCode(rawId[i]);
-        }
-        sessionStorage.setItem('phantom_credential_id', btoa(binary));
-        setIsBiometricEnabled(true);
-        setBiometricVerified(true);
-        toast.success('Biometric 2FA enabled for this session.');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('Biometric registration failed.');
-    }
-  };
-
-  const handleVerifyBiometrics = async (): Promise<boolean> => {
-    if (!isBiometricEnabled) return true;
-    if (biometricVerified) return true;
-
-    try {
-      const challenge = new Uint8Array(32);
-      window.crypto.getRandomValues(challenge);
-      const credIdB64 = sessionStorage.getItem('phantom_credential_id');
-      if (!credIdB64) {
-        setIsBiometricEnabled(false);
-        return true;
-      }
-      const credId = Uint8Array.from(atob(credIdB64), c => c.charCodeAt(0));
-
-      const assertion = await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          allowCredentials: [{ id: credId, type: 'public-key' }],
-          userVerification: 'required',
-          timeout: 60000
-        }
-      });
-
-      if (assertion) {
-        setBiometricVerified(true);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.error(err);
-      toast.error('Biometric verification failed.');
-      return false;
-    }
-  };
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -161,6 +60,7 @@ export default function Home() {
 
   // Dual Image Encryption Mode
   const [imageMode, setImageMode] = useState<'stego' | 'full'>('stego');
+  const [stegoSubMode, setStegoSubMode] = useState<'invisible' | 'qr'>('invisible');
   const [stagedImage, setStagedImage] = useState<{ data: string, name: string, type: string, size?: number } | null>(null);
 
   // File Upload Ref
@@ -342,25 +242,6 @@ export default function Home() {
     };
   }, [output]);
 
-  useEffect(() => {
-    if (!isProcessingInput) {
-      setInputScrambleText('');
-      return;
-    }
-
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
-    const interval = setInterval(() => {
-      setInputScrambleText(
-        text.split('').map((char) => {
-          if (char === ' ' || char === '\n') return char;
-          return chars[Math.floor(Math.random() * chars.length)];
-        }).join('')
-      );
-    }, 50);
-
-    return () => clearInterval(interval);
-  }, [isProcessingInput, text]);
-
   // Auto-detect Ciphertext
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setHasInteracted(true);
@@ -471,10 +352,6 @@ export default function Home() {
       return;
     }
 
-    // Category 2: Biometric 2FA check
-    const isVerified = await handleVerifyBiometrics();
-    if (!isVerified) return;
-
     await executeProcessing(text);
   };
 
@@ -484,6 +361,12 @@ export default function Home() {
       return;
     }
     setStegoModalOpen(false);
+    // Signal QR mode via a ref-safe mechanism before calling executeProcessing
+    if (stegoSubMode === 'qr') {
+      (window as unknown as Record<string, unknown>)._phantomStegoQR = true;
+    } else {
+      delete (window as unknown as Record<string, unknown>)._phantomStegoQR;
+    }
     await executeProcessing(stegoPayload, true);
   };
 
@@ -495,7 +378,6 @@ export default function Home() {
 
   const executeProcessing = async (payloadData: string, isStego = false) => {
     setLoading(true);
-    setIsProcessingInput(true);
     setOutput('');
     setShowQR(false);
 
@@ -503,23 +385,34 @@ export default function Home() {
 
     try {
       if (mode === 'encode') {
-        // Add a deliberate slight delay for the visualizer to feel "real"
-        await new Promise(r => setTimeout(r, 1000));
         const result = await processCryptoAsync('encode', payloadData, password);
 
         if (isStego) {
-          toast.info('Injecting encrypted payload into image pixels...');
-          const stegoImage = await hideTextInImage(result, stegoCarrier);
-
-          const link = document.createElement('a');
-          link.href = stegoImage;
-          link.download = `phantom_stego_${Date.now()}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-
-          setOutput("Steganography Successful. The encrypted payload is now hidden entirely within the pixels of the downloaded PNG image.\n\nTo decrypt, drag and drop the image back into the Phantom Vault.");
-          toast.success('Image successfully weaponized.');
+          const isQRMode = (window as unknown as Record<string, unknown>)._phantomStegoQR === true;
+          if (isQRMode) {
+            toast.info('Embedding encrypted QR code onto image...');
+            const stegoImage = await hideTextInImageQR(result, stegoCarrier);
+            const link = document.createElement('a');
+            link.href = stegoImage;
+            link.download = `phantom_qr_${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setOutput("✅ QR Overlay Steganography Complete!\n\nThe encrypted message is embedded as a QR code on the downloaded image.\n\n🛡️ COMPRESSION-RESISTANT: You can send this image as a photo on WhatsApp, Telegram, or any platform — the QR code will remain scannable.\n\nTo decode: drop the image back into Phantom, or use any QR scanner to copy the ciphertext and paste it here.");
+            toast.success('QR Overlay successful! Safe to share as a photo anywhere.');
+          } else {
+            toast.info('Injecting encrypted payload into image pixels...');
+            const stegoImage = await hideTextInImage(result, stegoCarrier);
+            const link = document.createElement('a');
+            link.href = stegoImage;
+            link.download = `phantom_stego_${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setOutput("✅ Invisible Steganography (LSB) Complete!\n\nThe encrypted payload is invisibly hidden inside the PNG pixels.\n\n⚠️ IMPORTANT: Send the image as a FILE/DOCUMENT (not a photo) on WhatsApp or Telegram. Sending as a photo triggers JPEG compression which destroys the hidden data.\n\nTo decrypt: drag the PNG back into the Phantom Vault.");
+            toast.success('Invisible stego complete. Send as FILE to preserve data.');
+          }
+          delete (window as unknown as Record<string, unknown>)._phantomStegoQR;
           setText('');
           setHasInteracted(false); // Reset demo mode
           setStegoCarrier('');
@@ -590,7 +483,6 @@ export default function Home() {
       setCryptoTime(Math.round(endTime - startTime));
       triggerHaptic();
       setLoading(false);
-      setIsProcessingInput(false);
     }
   };
 
@@ -722,7 +614,7 @@ export default function Home() {
             try {
               // ALWAYS attempt to extract ciphertext first (Decode scenario)
               const secret = await extractTextFromImage(event.target.result as string);
-              if (secret && secret.startsWith('--- PHANTOM SECURE BLOCK')) {
+              if (secret && (secret.startsWith('PHMX') || secret.startsWith('--- PHANTOM SECURE BLOCK'))) {
                 setText(secret);
                 setMode('decode');
                 toast.success('Hidden message found inside image! Set to Decode.');
@@ -791,7 +683,7 @@ export default function Home() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="flex flex-col items-center justify-center space-y-8"
+      className="flex flex-col items-center justify-center space-y-8 w-full overflow-x-hidden"
     >
 
       {/* Header section */}
@@ -803,7 +695,7 @@ export default function Home() {
             <Image src="/hero.webp" alt="Phantom Hero Illustration" fill className="rounded-3xl drop-shadow-[0_0_30px_rgba(99,102,241,0.3)] object-cover" priority />
           </div>
         </div>
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight sm:tracking-tighter">
+        <h1 className="hero-title font-extrabold tracking-tight px-2" style={{ textAlign: 'center' }}>
           Military-Grade <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Encryption</span>
         </h1>
         <p className="text-gray-400 max-w-lg mx-auto text-base sm:text-lg pt-2 leading-relaxed px-4 sm:px-0">
@@ -927,25 +819,17 @@ export default function Home() {
                   </AnimatePresence>
 
                   {!stagedImage ? (
-                    <div className="relative">
-                      <textarea
-                        value={text}
-                        onChange={handleTextChange}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        placeholder={mode === 'decode' ? "Paste the locked message code or drop an image..." : ""}
-                        className={`w-full h-36 relative ${isDragging ? 'bg-indigo-500/10 border-indigo-400 scale-[1.02]' : 'bg-black/80 border-white/10'} border-2 border-dashed sm:border-solid sm:border rounded-2xl p-5 text-base sm:text-lg ${isProcessingInput ? 'text-transparent' : 'text-white'} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] font-mono resize-none transition-all leading-relaxed backdrop-blur-md z-10`}
-                      />
-                      {isProcessingInput && (
-                        <div className="absolute inset-0 p-5 text-base sm:text-lg text-emerald-400 font-mono pointer-events-none z-20 overflow-hidden leading-relaxed break-all">
-                          {inputScrambleText}
-                          <span className="inline-block w-2 h-5 bg-emerald-400 animate-pulse ml-1 align-middle" />
-                        </div>
-                      )}
-                    </div>
+                    <textarea
+                      value={text}
+                      onChange={handleTextChange}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() => setIsFocused(false)}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      placeholder={mode === 'decode' ? "Paste the locked message code or drop an image..." : ""}
+                      className={`w-full h-36 relative ${isDragging ? 'bg-indigo-500/10 border-indigo-400 scale-[1.02]' : 'bg-black/80 border-white/10'} border-2 border-dashed sm:border-solid sm:border rounded-2xl p-5 text-base sm:text-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] font-mono resize-none transition-all leading-relaxed backdrop-blur-md z-10`}
+                    />
                   ) : (
                     <div
                       className="w-full h-36 relative bg-indigo-500/5 border-2 border-indigo-500/30 rounded-2xl p-5 flex flex-col items-center justify-center space-y-3 z-10"
@@ -955,9 +839,9 @@ export default function Home() {
                     >
                       <ImageIcon className="w-8 h-8 text-indigo-400 opacity-80" />
                       <div className="text-center">
-                        <p className="text-indigo-200 font-bold mb-1 truncate max-w-xs">{stagedImage?.name || 'Image'}</p>
+                        <p className="text-indigo-200 font-bold mb-1 truncate max-w-xs">{stagedImage.name}</p>
                         <p className="text-xs text-indigo-400/60">
-                          {stagedImage?.size ? `${(stagedImage.size / 1024).toFixed(1)} KB` : 'Image'} &middot; staged for processing
+                          {stagedImage.size ? `${(stagedImage.size / 1024).toFixed(1)} KB` : 'Image'} &middot; staged for processing
                         </p>
                       </div>
                     </div>
@@ -1004,6 +888,29 @@ export default function Home() {
                       <span className="text-xs opacity-70 mt-1">Encrypt image file itself</span>
                     </button>
                   </div>
+
+                  {/* Stego sub-mode: Invisible vs QR Overlay */}
+                  {imageMode === 'stego' && (
+                    <div className="mt-3 space-y-2">
+                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Sharing Method</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setStegoSubMode('invisible')}
+                          className={`text-left p-3 rounded-xl border text-sm transition-all ${stegoSubMode === 'invisible' ? 'bg-violet-500/20 border-violet-500/40 text-white' : 'bg-white/[0.02] border-white/10 text-gray-500 hover:border-white/20'}`}
+                        >
+                          <span className="font-bold block">🔮 Invisible (LSB)</span>
+                          <span className="text-xs opacity-70 mt-0.5 block">Perfect cover — send as FILE only. Fails on WhatsApp photo compression.</span>
+                        </button>
+                        <button
+                          onClick={() => setStegoSubMode('qr')}
+                          className={`text-left p-3 rounded-xl border text-sm transition-all ${stegoSubMode === 'qr' ? 'bg-emerald-500/20 border-emerald-500/40 text-white' : 'bg-white/[0.02] border-white/10 text-gray-500 hover:border-white/20'}`}
+                        >
+                          <span className="font-bold block">📱 QR Overlay</span>
+                          <span className="text-xs opacity-70 mt-0.5 block">Visible QR on image. Survives WhatsApp/Telegram photo compression.</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -1144,15 +1051,15 @@ export default function Home() {
                       </span>
                       {splitStats && (
                         <span className="hidden sm:inline text-[10px] text-gray-600 font-mono">
-                          {splitStats?.inputLen} → {splitStats?.outputLen} chars
-                          {' '}({splitStats?.inputLen && splitStats.inputLen > 0 ? `×${(splitStats.outputLen / splitStats.inputLen).toFixed(1)}` : '—'})
+                          {splitStats.inputLen} → {splitStats.outputLen} chars
+                          {' '}({splitStats.inputLen > 0 ? `×${(splitStats.outputLen / splitStats.inputLen).toFixed(1)}` : '—'})
                         </span>
                       )}
                     </div>
 
                     {/* Desktop Actions + toolbar controls */}
                     <div className="hidden sm:flex flex-wrap gap-2 items-center relative z-10">
-                      {/* Output toolbar extras: word-wrap + history + split diff */}
+                      {/* Output toolbar extras: word-wrap + history */}
                       <button
                         onClick={() => setWrapOutput(!wrapOutput)}
                         title={wrapOutput ? 'Switch to no-wrap mode' : 'Switch to wrap mode'}
@@ -1162,14 +1069,6 @@ export default function Home() {
                         <span className="hidden lg:inline">{wrapOutput ? 'Wrapping' : 'No Wrap'}</span>
                       </button>
                       <button
-                        onClick={() => setShowStructuralDiff(!showStructuralDiff)}
-                        title="Split-screen structural diff"
-                        className={`flex items-center gap-1.5 text-xs font-medium transition-colors px-2.5 py-1.5 rounded-md border ${showStructuralDiff ? 'text-indigo-300 bg-indigo-500/20 border-indigo-500/30' : 'text-gray-500 hover:text-white bg-white/5 border-white/5'}`}
-                      >
-                        <Files className="w-3.5 h-3.5" />
-                        <span className="hidden lg:inline">Split Diff</span>
-                      </button>
-                      <button
                         onClick={() => setShowHistory(true)}
                         title="Session History"
                         className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-white transition-colors bg-white/5 px-2.5 py-1.5 rounded-md border border-white/5"
@@ -1177,77 +1076,11 @@ export default function Home() {
                         <Clock className="w-3.5 h-3.5" />
                         <span className="hidden lg:inline">History</span>
                       </button>
-
-                      <Reorder.Group axis="x" values={actionOrder} onReorder={setActionOrder} className="flex items-center gap-2">
-                        {actionOrder.map((id) => (
-                          <Reorder.Item key={id} value={id}>
-                            {id === 'save' && mode === 'encode' && (
-                              <button
-                                onClick={downloadVaultFile}
-                                className="flex items-center gap-2 text-xs font-medium text-emerald-300 hover:text-white transition-colors bg-emerald-500/10 hover:bg-emerald-500/30 px-3 py-1.5 rounded-md border border-emerald-500/30 shadow-md cursor-grab active:cursor-grabbing"
-                                title="Export to .phantom Vault File"
-                              >
-                                <GripVertical className="w-3 h-3 opacity-30" />
-                                <Save className="w-3.5 h-3.5" />
-                                <span>.phantom</span>
-                              </button>
-                            )}
-                            {id === 'link' && (
-                              <button
-                                onClick={generateShareLink}
-                                className="flex items-center gap-2 text-xs font-medium text-indigo-300 hover:text-white transition-colors bg-indigo-500/10 hover:bg-indigo-500/30 px-3 py-1.5 rounded-md border border-indigo-500/30 shadow-md cursor-grab active:cursor-grabbing"
-                                title="Generate Secure Link"
-                              >
-                                <GripVertical className="w-3 h-3 opacity-30" />
-                                <LinkIcon className="w-3.5 h-3.5" />
-                                <span>Link</span>
-                              </button>
-                            )}
-                            {id === 'qr' && (
-                              <button
-                                onClick={() => setShowQR(!showQR)}
-                                className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5 cursor-grab active:cursor-grabbing"
-                                title="Show QR Code"
-                              >
-                                <GripVertical className="w-3 h-3 opacity-30" />
-                                <QrCode className="w-3.5 h-3.5" />
-                                <span>QR</span>
-                              </button>
-                            )}
-                            {id === 'txt' && (
-                              <button
-                                onClick={downloadTxtFile}
-                                className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5 cursor-grab active:cursor-grabbing"
-                                title="Download TXT"
-                              >
-                                <GripVertical className="w-3 h-3 opacity-30" />
-                                <Download className="w-3.5 h-3.5" />
-                                <span>TXT</span>
-                              </button>
-                            )}
-                            {id === 'copy' && (
-                              <button
-                                onClick={copyToClipboard}
-                                className={`flex items-center gap-2 text-xs font-medium transition-colors px-3 py-1.5 rounded-md shadow-lg border cursor-grab active:cursor-grabbing ${isCopied
-                                  ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/30'
-                                  : 'text-white bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30'
-                                  }`}
-                                title="Copy to clipboard"
-                              >
-                                <GripVertical className="w-3 h-3 opacity-30" />
-                                {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                                <span>{isCopied ? 'Copied!' : 'Copy'}</span>
-                              </button>
-                            )}
-                          </Reorder.Item>
-                        ))}
-                      </Reorder.Group>
-
                       {/* Share expiry selector */}
                       <select
                         value={shareExpiry}
                         onChange={e => setShareExpiry(e.target.value as typeof shareExpiry)}
-                        className="text-[10px] bg-black/60 border border-white/10 rounded-md text-gray-400 px-1.5 py-1.5 focus:outline-none ml-1"
+                        className="text-[10px] bg-black/60 border border-white/10 rounded-md text-gray-400 px-1.5 py-1.5 focus:outline-none"
                         title="Link expiry"
                       >
                         <option value="none">∞ No expiry</option>
@@ -1255,7 +1088,53 @@ export default function Home() {
                         <option value="24h">24h expiry</option>
                         <option value="7d">7d expiry</option>
                       </select>
+                      {mode === 'encode' && (
+                        <button
+                          onClick={downloadVaultFile}
+                          className="flex items-center gap-2 text-xs font-medium text-emerald-300 hover:text-white transition-colors bg-emerald-500/10 hover:bg-emerald-500/30 px-3 py-1.5 rounded-md border border-emerald-500/30 shadow-md"
+                          title="Export to .phantom Vault File"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                          <span>.phantom</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={generateShareLink}
+                        className="flex items-center gap-2 text-xs font-medium text-indigo-300 hover:text-white transition-colors bg-indigo-500/10 hover:bg-indigo-500/30 px-3 py-1.5 rounded-md border border-indigo-500/30 shadow-md"
+                        title="Generate Secure Link"
+                      >
+                        <LinkIcon className="w-3.5 h-3.5" />
+                        <span>Link</span>
+                      </button>
+                      <button
+                        onClick={() => setShowQR(!showQR)}
+                        className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5"
+                        title="Show QR Code"
+                      >
+                        <QrCode className="w-3.5 h-3.5" />
+                        <span>QR</span>
+                      </button>
+                      <button
+                        onClick={downloadTxtFile}
+                        className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5"
+                        title="Download TXT"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>TXT</span>
+                      </button>
+                      <button
+                        onClick={copyToClipboard}
+                        className={`flex items-center gap-2 text-xs font-medium transition-colors px-3 py-1.5 rounded-md shadow-lg border ${isCopied
+                          ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/30'
+                          : 'text-white bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30'
+                          }`}
+                        title="Copy to clipboard"
+                      >
+                        {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{isCopied ? 'Copied!' : 'Copy'}</span>
+                      </button>
                     </div>{/* end action toolbar flex */}
+
 
                     {/* Mobile Actions Menu Toggle */}
                     <div className="sm:hidden absolute top-3 right-3 z-10">
@@ -1278,44 +1157,9 @@ export default function Home() {
                   )}
 
                   <div className="p-4 sm:p-6 relative max-w-full">
-                    {!showStructuralDiff ? (
-                      <p className={`font-mono text-xs sm:text-sm md:text-base select-all leading-relaxed max-h-[clamp(15rem,30vh,40rem)] overflow-y-auto w-full custom-scrollbar transition-colors duration-300 ${wrapOutput ? 'output-wrap' : 'output-nowrap'} ${isScrambling ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-gray-300'}`}>
-                        {displayedOutput}
-                      </p>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full min-h-[15rem] transition-all">
-                        <motion.div
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="flex flex-col border border-white/5 rounded-2xl bg-black/40 p-4"
-                        >
-                          <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-3">Source Structure</span>
-                          <div className="flex-1 font-mono text-[10px] sm:text-xs text-indigo-300/60 break-all overflow-y-auto max-h-64 custom-scrollbar">
-                            {text.split('').map((c, i) => (
-                              <span key={i} className={c === ' ' || c === '\n' ? 'text-white/20' : ''}>{c === '\n' ? '↵\n' : (c === ' ' ? '·' : '■')}</span>
-                            ))}
-                          </div>
-                          <div className="mt-3 pt-2 border-t border-white/5 text-[10px] text-gray-500">
-                            {text.length} characters
-                          </div>
-                        </motion.div>
-                        <motion.div
-                          initial={{ opacity: 0, x: 10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          className="flex flex-col border border-indigo-500/20 rounded-2xl bg-indigo-500/5 p-4"
-                        >
-                          <span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold mb-3">Vault Structure</span>
-                          <div className="flex-1 font-mono text-[10px] sm:text-xs text-indigo-400/60 break-all overflow-y-auto max-h-64 custom-scrollbar">
-                            {output.split('').map((c, i) => (
-                              <span key={i} className={c === ' ' || c === '\n' ? 'text-white/20' : ''}>{c === '\n' ? '↵\n' : (c === ' ' ? '·' : '■')}</span>
-                            ))}
-                          </div>
-                          <div className="mt-3 pt-2 border-t border-white/5 text-[10px] text-indigo-400/60">
-                            {output.length} characters
-                          </div>
-                        </motion.div>
-                      </div>
-                    )}
+                    <p className={`font-mono text-xs sm:text-sm md:text-base select-all leading-relaxed max-h-[clamp(15rem,30vh,40rem)] overflow-y-auto w-full custom-scrollbar transition-colors duration-300 ${wrapOutput ? 'output-wrap' : 'output-nowrap'} ${isScrambling ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-gray-300'}`}>
+                      {displayedOutput}
+                    </p>
                     {/* Text Diff Toggle (decode mode, when prev exists) */}
                     {mode === 'decode' && prevDecoded && prevDecoded !== output && (
                       <div className="mt-3 border-t border-white/5 pt-3">
@@ -1329,7 +1173,7 @@ export default function Home() {
                         {showDiff && (
                           <div className="mt-2 text-xs font-mono text-gray-400 bg-black/40 rounded-xl p-3 max-h-32 overflow-y-auto custom-scrollbar">
                             {output.split(' ').map((word, i) => (
-                              <span key={i} className={prevDecoded?.split(' ').includes(word) ? 'text-gray-400' : 'text-yellow-300 underline'}>{word} </span>
+                              <span key={i} className={prevDecoded.split(' ').includes(word) ? 'text-gray-400' : 'text-yellow-300 underline'}>{word} </span>
                             ))}
                           </div>
                         )}
@@ -1337,45 +1181,6 @@ export default function Home() {
                     )}
                   </div>
 
-                  <div className="pt-2">
-                    <button
-                      onClick={() => document.getElementById('advanced-security-panel')?.classList.toggle('hidden')}
-                      className="text-[10px] text-gray-500 hover:text-indigo-400 font-bold uppercase tracking-widest flex items-center gap-2 transition-colors focus:outline-none"
-                    >
-                      <ShieldCheck className="w-3 h-3" /> Advanced Security Options
-                    </button>
-                    <div id="advanced-security-panel" className="hidden mt-4 space-y-3 bg-black/40 border border-white/5 p-4 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-300">
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-gray-300">Biometric Session Lock</span>
-                          <span className="text-[10px] text-gray-500">Require TouchID/FaceID for every unlock operation</span>
-                        </div>
-                        <button
-                          onClick={isBiometricEnabled ? () => setIsBiometricEnabled(false) : handleRegisterBiometrics}
-                          className={`w-10 h-5 rounded-full relative transition-colors ${isBiometricEnabled ? 'bg-emerald-500/50' : 'bg-gray-700'}`}
-                        >
-                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${isBiometricEnabled ? 'right-1' : 'left-1'}`} />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-bold text-gray-300">Dark Web Friendly Mode</span>
-                          <span className="text-[10px] text-gray-500">Zero external dependencies. Maximum anonymity.</span>
-                        </div>
-                        <button
-                          onClick={() => setDarkWebMode(!darkWebMode)}
-                          className={`w-10 h-5 rounded-full relative transition-colors ${darkWebMode ? 'bg-indigo-500/50' : 'bg-gray-700'}`}
-                        >
-                          <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${darkWebMode ? 'right-1' : 'left-1'}`} />
-                        </button>
-                      </div>
-                      {darkWebMode && (
-                        <div className="mt-2 text-[9px] text-indigo-300/60 leading-tight bg-indigo-500/10 p-2 rounded-lg border border-indigo-500/20 italic">
-                          * External fonts, analytics, and textures disabled. System fonts only.
-                        </div>
-                      )}
-                    </div>
-                  </div>
                   {/* Cryptographic Telemetry Stats */}
                   <div className="px-5 py-3 border-t border-white/5 bg-black/40 flex flex-wrap items-center justify-between text-[10px] sm:text-xs text-indigo-400/60 font-mono uppercase tracking-widest gap-2">
                     <div className="flex items-center gap-4">
@@ -1847,6 +1652,6 @@ export default function Home() {
           />
         )}
       </AnimatePresence>
-    </motion.div>
+    </motion.div >
   );
 }

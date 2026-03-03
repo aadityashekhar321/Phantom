@@ -64,6 +64,24 @@
   border-color: hsl(var(--accent-h), var(--accent-s), 50%, 0.3);
 }
 
+/* ────── Base resets ────────────────────────────────────── */
+
+/* Prevent ALL horizontal overflow globally */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure every element respects box model and doesn't overflow */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
@@ -111,9 +129,57 @@ body {
 .output-wrap {
   white-space: pre-wrap;
   word-break: break-all;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 .output-nowrap {
   white-space: pre;
   overflow-x: auto;
+  max-width: 100%;
+}
+
+/* ────── Fluid Hero Typography ───────────────────────────
+   Scales from 2rem (mobile) → 5.5rem (4K/TV) without word-clipping.
+   Uses clamp() for truly responsive fluid scaling.                  */
+.hero-title {
+  font-size: clamp(2rem, 7vw, 5.5rem);
+  line-height: 1.1;
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: none;
+  max-width: 100%;
+}
+
+/* ────── Safe horizontal padding utility ────────────────── */
+.safe-px {
+  padding-left: clamp(1rem, 4vw, 3rem);
+  padding-right: clamp(1rem, 4vw, 3rem);
+}
+
+/* ────── Mobile-specific adjustments ────────────────────── */
+@media (max-width: 640px) {
+  /* Prevent marquee items from overflowing on very small screens */
+  .marquee-item {
+    font-size: 0.7rem;
+  }
+
+  /* Ensure GlassCard content fits on small screens */
+  .glass-card-content {
+    overflow-x: hidden;
+  }
+}
+
+/* ────── Large screen (TV / 4K) layout cap ──────────────── */
+@media (min-width: 1920px) {
+  .hero-title {
+    font-size: clamp(4rem, 4.5vw, 6rem);
+  }
+}
+
+/* ────── Table overflow prevention ─────────────────────── */
+table {
+  table-layout: fixed;
+  width: 100%;
+  word-break: break-word;
 }

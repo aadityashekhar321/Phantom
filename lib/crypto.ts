@@ -125,45 +125,39 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
   return bytes.buffer;
 }
 
-// Basic Token Scrambling and Obfuscation layer
-// Satisfies "Optional second layer: perform token scrambling (shuffle blocks). Add harmless noise characters"
+// Compact token obfuscation: prefix + reversed base64
+// Format: PHMX<reversed_base64>
+// This avoids the multi-line separator overhead that inflated large-file ciphertext by ~35%
 function obfuscateTokens(base64Str: string): string {
-  // 1. Token scrambling: Reverse the base64 string
   const reversed = base64Str.split('').reverse().join('');
-
-  // 2. Add noise characters/structure
-  // Break into chunks of 64 characters
-  const chunks = reversed.match(/.{1,64}/g) || [];
-
-  // Wrap with AI-like semantic structure
-  return `--- PHANTOM SECURE BLOCK REVISION 1 ---\n${chunks.join('\n-==-\n')}\n--- END OF SECURE BLOCK ---`;
+  return `PHMX${reversed}`;
 }
 
 function deobfuscateTokens(obfuscatedStr: string): string {
-  if (!obfuscatedStr.includes('PHANTOM SECURE BLOCK')) {
-    throw new Error('Invalid code format.');
+  const trimmed = obfuscatedStr.trim();
+
+  // Support new compact format
+  if (trimmed.startsWith('PHMX')) {
+    const reversed = trimmed.slice(4);
+    return reversed.split('').reverse().join('');
   }
 
-  // Remove wrapping and noise characters
-  // Match everything between the header and footer
-  const header = '--- PHANTOM SECURE BLOCK REVISION 1 ---';
-  const footer = '--- END OF SECURE BLOCK ---';
-
-  const startIdx = obfuscatedStr.indexOf(header);
-  const endIdx = obfuscatedStr.lastIndexOf(footer);
-
-  if (startIdx === -1 || endIdx === -1) {
-    throw new Error("Invalid cipher block structure");
+  // Backwards compatibility: support old multi-line format
+  if (trimmed.includes('PHANTOM SECURE BLOCK')) {
+    const header = '--- PHANTOM SECURE BLOCK REVISION 1 ---';
+    const footer = '--- END OF SECURE BLOCK ---';
+    const startIdx = trimmed.indexOf(header);
+    const endIdx = trimmed.lastIndexOf(footer);
+    if (startIdx === -1 || endIdx === -1) {
+      throw new Error('Invalid cipher block structure');
+    }
+    const payload = trimmed.substring(startIdx + header.length, endIdx);
+    const pureData = payload
+      .replace(/\r?\n|\r/g, '')
+      .replace(/-==-/g, '')
+      .trim();
+    return pureData.split('').reverse().join('');
   }
 
-  const payload = obfuscatedStr.substring(startIdx + header.length, endIdx);
-
-  // Remove all noise: newlines, carriage returns, and the '-==-' separator
-  const pureData = payload
-    .replace(/\r?\n|\r/g, '') // remove all linebreaks
-    .replace(/-==-/g, '')     // remove separators
-    .trim();
-
-  // Reverse back
-  return pureData.split('').reverse().join('');
+  throw new Error('Invalid code format. Ensure you paste the complete Phantom ciphertext.');
 }
