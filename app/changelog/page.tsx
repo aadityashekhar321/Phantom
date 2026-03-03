@@ -6,9 +6,19 @@ import { Clock, Tag, ArrowRight } from 'lucide-react';
 
 const changelog = [
     {
-        version: 'v1.5.0',
+        version: 'v2.1.0',
         date: '2026-03-04',
         tag: 'latest',
+        changes: [
+            { type: 'feat', text: 'Encrypted QR Identity Cards — generate and download beautiful, shareable profile cards containing your hidden encrypted message' },
+            { type: 'feat', text: 'Dynamic Ambient Backgrounds — immersive floating gradient orbs for default themes, and performance-optimized Matrix Rain canvas for the Matrix theme' },
+            { type: 'feat', text: 'Offline-Ready Status Badge — real-time PWA connection monitoring badge in the bottom left corner' },
+        ],
+    },
+    {
+        version: 'v2.0.0',
+        date: '2026-03-04',
+        tag: null,
         changes: [
             { type: 'feat', text: 'Deniable Vault (Decoy Mode) — dual-payload AES encryption; revealing the decoy password shows a fake plaintext, protecting under coercion' },
             { type: 'feat', text: 'Self-Destruct Timer — settings gear in Navbar to toggle auto-clear with 30s/60s countdown; output is wiped immediately after the timer expires' },

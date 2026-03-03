@@ -177,9 +177,32 @@ body {
   }
 }
 
-/* ────── Table overflow prevention ─────────────────────── */
-table {
-  table-layout: fixed;
-  width: 100%;
-  word-break: break-word;
+/* ─── Ambient Background Orb Animations ───────────────── */
+@keyframes ambientOrb1 {
+  0%   { transform: translate(0,    0   ) scale(1);    }
+  25%  { transform: translate(-6vw, 4vh ) scale(1.05); }
+  50%  { transform: translate(4vw,  -5vh) scale(0.98); }
+  75%  { transform: translate(-3vw, -2vh) scale(1.02); }
+  100% { transform: translate(0,    0   ) scale(1);    }
+}
+
+@keyframes ambientOrb2 {
+  0%   { transform: translate(0,   0   ) scale(1);    }
+  30%  { transform: translate(5vw, 3vh ) scale(1.04); }
+  60%  { transform: translate(-4vw, 6vh) scale(0.97); }
+  100% { transform: translate(0,   0   ) scale(1);    }
+}
+
+@keyframes ambientOrb3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(3vw, -4vh) scale(1.06); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+.ambient-orb-1 { animation: ambientOrb1 22s ease-in-out infinite; will-change: transform; }
+.ambient-orb-2 { animation: ambientOrb2 28s ease-in-out infinite; will-change: transform; }
+.ambient-orb-3 { animation: ambientOrb3 18s ease-in-out infinite; will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-orb-1, .ambient-orb-2, .ambient-orb-3 { animation: none; }
 }

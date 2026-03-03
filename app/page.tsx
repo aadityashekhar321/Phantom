@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { GlassCard } from '@/components/GlassCard';
 import { MagneticButton } from '@/components/MagneticButton';
-import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb, Sparkles, Eye, EyeOff, Check, Zap, WifiOff, Shuffle, WrapText, Clock, AlignLeft, Files } from 'lucide-react';
+import { Lock, Unlock, Copy, Trash2, ArrowRight, Download, QrCode, FileText, Key, Share2, X as CloseIcon, Image as ImageIcon, ShieldCheck, Github, MoreVertical, Upload, Camera, Link as LinkIcon, Save, Bomb, Sparkles, Eye, EyeOff, Check, Zap, WifiOff, Shuffle, WrapText, Clock, AlignLeft, Files, CreditCard } from 'lucide-react';
 import { HistoryPanel, type HistoryEntry } from '@/components/HistoryPanel';
 import { toast } from 'sonner';
 import { extractTextFromImage, hideTextInImage, hideTextInImageQR } from '@/lib/stego';
@@ -13,6 +13,8 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings } from '@/components/SettingsProvider';
+import { IdentityCardModal } from '@/components/IdentityCardModal';
+
 
 // Heavy component lazy-loaded (only loaded when QR button is clicked)
 const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), {
@@ -63,6 +65,7 @@ export default function Home() {
   const [decoyText, setDecoyText] = useState('');
   const [decoyPassword, setDecoyPassword] = useState('');
   const [entropy, setEntropy] = useState(0);
+  const [showIdentityCard, setShowIdentityCard] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1244,6 +1247,16 @@ export default function Home() {
                       {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{isCopied ? 'Copied!' : 'Copy'}</span>
                     </button>
+                    {mode === 'encode' && (
+                      <button
+                        onClick={() => setShowIdentityCard(true)}
+                        className="flex items-center gap-2 text-xs font-medium text-violet-300 hover:text-white transition-colors bg-violet-500/10 hover:bg-violet-500/30 px-3 py-1.5 rounded-md border border-violet-500/30"
+                        title="Generate QR Identity Card"
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        <span>QR Card</span>
+                      </button>
+                    )}
                   </div>{/* end action toolbar flex */}
 
 
@@ -1767,6 +1780,11 @@ export default function Home() {
           />
         )}
       </AnimatePresence>
+      <IdentityCardModal
+        isOpen={showIdentityCard}
+        onClose={() => setShowIdentityCard(false)}
+        ciphertext={output}
+      />
     </motion.div >
   );
 }
