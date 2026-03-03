@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '@/components/GlassCard';
 import { MagneticButton } from '@/components/MagneticButton';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
-import { Lock, Unlock, Trash2, Plus, Eye, EyeOff, FileText, Shield, Shuffle, ArrowRight, PenSquare, Sparkles, KeyRound } from 'lucide-react';
+import { Lock, Unlock, Trash2, Plus, Eye, EyeOff, FileText, Shield, Shuffle, PenSquare, Sparkles, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Note {
