@@ -227,9 +227,70 @@ export default function SecurityInfo() {
 
             <GlassCard className="max-w-3xl mx-auto px-5 py-8 sm:px-10 sm:py-12">
                 <div className="flex flex-col gap-12 sm:gap-16">
+                    {/* ── Why Phantom? Comparison ── */}
+                    <div className="space-y-8 sm:space-y-10">
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
+                            <Shield className="w-6 h-6 text-indigo-400" />
+                            Why Phantom?
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Phantom Card */}
+                            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-3xl p-6 sm:p-8 space-y-6">
+                                <h3 className="text-xl font-bold text-indigo-300 flex items-center gap-2">
+                                    <CheckCircle className="w-5 h-5 text-indigo-500" />
+                                    Phantom Vault
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between border-b border-indigo-500/10 pb-3">
+                                        <span className="text-sm text-gray-400">Metadata Stored</span>
+                                        <span className="text-sm font-bold text-emerald-400">Absolutely Zero</span>
+                                    </div>
+                                    <div className="flex items-center justify-between border-b border-indigo-500/10 pb-3">
+                                        <span className="text-sm text-gray-400">User Identity</span>
+                                        <span className="text-sm font-bold text-emerald-400">100% Anonymous</span>
+                                    </div>
+                                    <div className="flex items-center justify-between border-b border-indigo-500/10 pb-3">
+                                        <span className="text-sm text-gray-400">Data Persistence</span>
+                                        <span className="text-sm font-bold text-emerald-400">Volatile (In-Memory)</span>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-1">
+                                        <span className="text-sm text-gray-400">Steganography Support</span>
+                                        <span className="text-sm font-bold text-emerald-400">Yes (LSB & QR)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Mainstream Apps Card */}
+                            <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 opacity-80">
+                                <h3 className="text-xl font-bold text-gray-300 flex items-center gap-2">
+                                    <Database className="w-5 h-5 text-gray-500" />
+                                    Mainstream (Signal/WhatsApp)
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                                        <span className="text-sm text-gray-500">Metadata Stored</span>
+                                        <span className="text-sm font-bold text-red-400">Logs & Timestamps</span>
+                                    </div>
+                                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                                        <span className="text-sm text-gray-500">User Identity</span>
+                                        <span className="text-sm font-bold text-red-400">Linked to Phone #</span>
+                                    </div>
+                                    <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                                        <span className="text-sm text-gray-500">Data Persistence</span>
+                                        <span className="text-sm font-bold text-red-400">Saved on Servers</span>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-1">
+                                        <span className="text-sm text-gray-500">Steganography Support</span>
+                                        <span className="text-sm font-bold text-red-400">No</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Technical Specs */}
                     <div className="space-y-8 sm:space-y-10">
-                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6">Technical Specifications</h2>
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 text-white">Technical Specifications</h2>
                         <ul className="list-disc list-inside space-y-5 sm:space-y-6 text-gray-300 text-base leading-relaxed">
                             <li><strong>Algorithm:</strong> AES-256 in GCM (Galois/Counter Mode) — authenticated encryption that simultaneously provides confidentiality and tamper-detection.</li>
                             <li><strong>Key Size:</strong> 256-bit keys. At current compute speeds, a brute-force attack would require more energy than exists in the observable universe.</li>
@@ -302,17 +363,47 @@ export default function SecurityInfo() {
                     <div className="space-y-8 sm:space-y-10 pt-4">
                         <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
                             <Shield className="w-6 h-6 text-orange-400" />
-                            Threat Model &amp; Limitations
+                            Privacy Threat Model
                         </h2>
-                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-3xl p-6 sm:p-8 space-y-4">
-                            <p className="text-orange-200/80 text-sm sm:text-base leading-relaxed mb-4">
-                                While Phantom mathematically guarantees your data is secure in transit and at rest, it <strong>cannot</strong> protect against endpoint compromise:
-                            </p>
-                            <ul className="list-disc list-inside space-y-3 text-orange-200/60 text-sm sm:text-base">
-                                <li><strong>Keyloggers:</strong> If your OS is infected with malware, attackers can capture your Secret Key as you type it.</li>
-                                <li><strong>Screen Grabbers:</strong> Malicious background apps could record your screen before you click &quot;Lock&quot;.</li>
-                                <li><strong>Physical Access:</strong> Phantom does not protect you if someone physically looks over your shoulder.</li>
-                            </ul>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            {/* What it Protects */}
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-emerald-500/10">
+                                <h3 className="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                                    <CheckCircle className="w-5 h-5 text-emerald-500" />
+                                    What Phantom Protects
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                                        <p className="text-sm font-bold text-emerald-300">ISP / Network Snooping</p>
+                                        <p className="text-xs text-emerald-400/70 mt-1">Traffic is encrypted locally. Network sees only random noise.</p>
+                                    </div>
+                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                                        <p className="text-sm font-bold text-emerald-300">Cloud Storage Hacks</p>
+                                        <p className="text-xs text-emerald-400/70 mt-1">Stolen Ciphertext means nothing without your Secret Key.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* What it Doesn't */}
+                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-orange-500/10">
+                                <h3 className="text-lg font-bold text-orange-400 flex items-center gap-2">
+                                    <ServerOff className="w-5 h-5 text-orange-500" />
+                                    What It Cannot Protect
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                                        <p className="text-sm font-bold text-orange-300 mb-1">Local OS Keyloggers</p>
+                                        <span className="text-[10px] uppercase font-bold tracking-widest bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full inline-block mb-1">Hardware Level</span>
+                                        <p className="text-xs text-orange-400/70">Browser software cannot stop OS-level keyloggers.</p>
+                                    </div>
+                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                                        <p className="text-sm font-bold text-orange-300 mb-1">Physical Coercion</p>
+                                        <span className="text-[10px] uppercase font-bold tracking-widest bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full inline-block mb-1">Mitigated by Decoy Mode</span>
+                                        <p className="text-xs text-orange-400/70">Someone looking over your shoulder. Use Self-Destruct to minimize exposure window.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

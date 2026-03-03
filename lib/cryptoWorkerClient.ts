@@ -1,7 +1,8 @@
 export const processCryptoAsync = (
-    type: 'encode' | 'decode',
+    type: 'encode' | 'decode' | 'encodeDuo',
     text: string,
-    password: string
+    password: string,
+    extra?: Record<string, string>
 ): Promise<string> => {
     return new Promise((resolve, reject) => {
         // Generate a unique ID for this job
@@ -31,6 +32,6 @@ export const processCryptoAsync = (
         };
 
         // Send payload
-        worker.postMessage({ id, type, text, password });
+        worker.postMessage({ id, type, text, password, ...extra });
     });
 };

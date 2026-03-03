@@ -12,6 +12,7 @@ import jsQR from 'jsqr';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSettings } from '@/components/SettingsProvider';
 
 // Heavy component lazy-loaded (only loaded when QR button is clicked)
 const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeSVG), {
@@ -53,6 +54,15 @@ export default function Home() {
   const [batchFiles, setBatchFiles] = useState<{ name: string; data: string }[]>([]);
   const [batchLoading, setBatchLoading] = useState(false);
   const [batchPassword, setBatchPassword] = useState('');
+
+  const { selfDestructEnabled, selfDestructDuration } = useSettings();
+  const [destructCountdown, setDestructCountdown] = useState<number | null>(null);
+
+  // Decoy Mode State
+  const [isDuo, setIsDuo] = useState(false);
+  const [decoyText, setDecoyText] = useState('');
+  const [decoyPassword, setDecoyPassword] = useState('');
+  const [entropy, setEntropy] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -188,6 +198,40 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Self-Destruct Countdown Logic
+  useEffect(() => {
+    if (!output || !selfDestructEnabled) {
+      setDestructCountdown(null);
+      return;
+    }
+
+    setDestructCountdown(selfDestructDuration);
+    const interval = setInterval(() => {
+      setDestructCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          setOutput(''); // SELF DESTRUCT
+          toast.warning('Output cleared by Self-Destruct timer.');
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [output, selfDestructEnabled, selfDestructDuration]);
+
+  // Entropy Calculation
+  const calculateEntropy = (str: string) => {
+    if (!str) return 0;
+    let pool = 0;
+    if (/[a-z]/.test(str)) pool += 26;
+    if (/[A-Z]/.test(str)) pool += 26;
+    if (/[0-9]/.test(str)) pool += 10;
+    if (/[^a-zA-Z0-9]/.test(str)) pool += 32;
+    return Math.floor(Math.log2(Math.pow(pool, str.length)));
+  };
+
   useEffect(() => {
     if (!output) {
       setDisplayedOutput('');
@@ -247,6 +291,7 @@ export default function Home() {
     setHasInteracted(true);
     const val = e.target.value;
     setText(val);
+    setEntropy(calculateEntropy(password));
 
     if (mode === 'encode' && val.trim().startsWith('--- PHANTOM SECURE BLOCK')) {
       setMode('decode');
@@ -385,7 +430,12 @@ export default function Home() {
 
     try {
       if (mode === 'encode') {
-        const result = await processCryptoAsync('encode', payloadData, password);
+        let result;
+        if (isDuo && !isStego) {
+          result = await processCryptoAsync('encodeDuo', payloadData, password, { decoyText, decoyPassword });
+        } else {
+          result = await processCryptoAsync('encode', payloadData, password);
+        }
 
         if (isStego) {
           const isQRMode = (window as unknown as Record<string, unknown>)._phantomStegoQR === true;
@@ -914,6 +964,57 @@ export default function Home() {
                 </motion.div>
               )}
 
+              {/* NEW: Decoy Mode (Deniable Vault) */}
+              {mode === 'encode' && !stagedImage && (
+                <div className="mb-6">
+                  <button
+                    onClick={() => setIsDuo(!isDuo)}
+                    className={`flex items-center justify-between w-full p-4 rounded-2xl border transition-all ${isDuo ? 'bg-amber-500/10 border-amber-500/30' : 'bg-white/[0.02] border-white/5 hover:border-white/10'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-xl border ${isDuo ? 'bg-amber-500/20 border-amber-500/30 text-amber-400' : 'bg-white/5 border-white/10 text-gray-500'}`}>
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <span className={`block font-bold text-sm ${isDuo ? 'text-amber-200' : 'text-gray-400'}`}>Deniable Vault (Decoy Mode)</span>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Hide a second message</span>
+                      </div>
+                    </div>
+                    <div className={`w-10 h-5 rounded-full relative transition-colors ${isDuo ? 'bg-amber-600' : 'bg-white/10'}`}>
+                      <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${isDuo ? 'left-6' : 'left-1'}`} />
+                    </div>
+                  </button>
+
+                  <AnimatePresence>
+                    {isDuo && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-3 space-y-3 overflow-hidden"
+                      >
+                        <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 space-y-3 shadow-inner">
+                          <textarea
+                            value={decoyText}
+                            onChange={e => setDecoyText(e.target.value)}
+                            placeholder="Enter the DECOY message (this is shown if the decoy password is used)..."
+                            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-gray-300 placeholder-gray-700 focus:outline-none focus:border-amber-500/30 h-24 font-sans tracking-wide"
+                          />
+                          <input
+                            type="password"
+                            value={decoyPassword}
+                            onChange={e => setDecoyPassword(e.target.value)}
+                            placeholder="Decoy Password..."
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-700 focus:outline-none focus:border-amber-500/30 font-mono"
+                          />
+                          <p className="text-[10px] text-amber-500/60 leading-tight italic">NOTE: Provide this message and password to someone under pressure. Your MAIN secret remains safe.</p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
               <div className="space-y-2 relative">
                 {/* Ambient Aura overlay for keystrokes */}
                 <div id="password-input-aura" className="absolute inset-0 rounded-2xl pointer-events-none z-20 opacity-0" />
@@ -975,7 +1076,10 @@ export default function Home() {
                               passwordStrength <= 80 ? 'Strong' :
                                 'Very Strong'}
                       </span>
-                      <span className="text-xs text-gray-600 font-mono">{password.length} chars</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-indigo-400 font-mono tracking-tighter">{entropy} Bits Entropy</span>
+                        <span className="text-xs text-gray-600 font-mono">{password.length} chars</span>
+                      </div>
                     </div>
                   </>
                 )}
@@ -1049,154 +1153,160 @@ export default function Home() {
                       <span className="text-xs sm:text-sm font-semibold text-indigo-300 tracking-widest uppercase">
                         {mode === 'encode' ? 'Locked Secret Code' : 'Unlocked Message'}
                       </span>
-                      {splitStats && (
-                        <span className="hidden sm:inline text-[10px] text-gray-600 font-mono">
-                          {splitStats.inputLen} → {splitStats.outputLen} chars
-                          {' '}({splitStats.inputLen > 0 ? `×${(splitStats.outputLen / splitStats.inputLen).toFixed(1)}` : '—'})
-                        </span>
+                      {destructCountdown !== null && (
+                        <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 border border-red-500/30 rounded-xl text-[10px] sm:text-xs font-bold text-red-400 animate-pulse">
+                          <Bomb className="w-3.5 h-3.5" />
+                          <span>DESTRUCT IN {destructCountdown}S</span>
+                        </div>
                       )}
                     </div>
-
-                    {/* Desktop Actions + toolbar controls */}
-                    <div className="hidden sm:flex flex-wrap gap-2 items-center relative z-10">
-                      {/* Output toolbar extras: word-wrap + history */}
-                      <button
-                        onClick={() => setWrapOutput(!wrapOutput)}
-                        title={wrapOutput ? 'Switch to no-wrap mode' : 'Switch to wrap mode'}
-                        className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-white transition-colors bg-white/5 px-2.5 py-1.5 rounded-md border border-white/5"
-                      >
-                        {wrapOutput ? <AlignLeft className="w-3.5 h-3.5" /> : <WrapText className="w-3.5 h-3.5" />}
-                        <span className="hidden lg:inline">{wrapOutput ? 'Wrapping' : 'No Wrap'}</span>
-                      </button>
-                      <button
-                        onClick={() => setShowHistory(true)}
-                        title="Session History"
-                        className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-white transition-colors bg-white/5 px-2.5 py-1.5 rounded-md border border-white/5"
-                      >
-                        <Clock className="w-3.5 h-3.5" />
-                        <span className="hidden lg:inline">History</span>
-                      </button>
-                      {/* Share expiry selector */}
-                      <select
-                        value={shareExpiry}
-                        onChange={e => setShareExpiry(e.target.value as typeof shareExpiry)}
-                        className="text-[10px] bg-black/60 border border-white/10 rounded-md text-gray-400 px-1.5 py-1.5 focus:outline-none"
-                        title="Link expiry"
-                      >
-                        <option value="none">∞ No expiry</option>
-                        <option value="1h">1h expiry</option>
-                        <option value="24h">24h expiry</option>
-                        <option value="7d">7d expiry</option>
-                      </select>
-                      {mode === 'encode' && (
-                        <button
-                          onClick={downloadVaultFile}
-                          className="flex items-center gap-2 text-xs font-medium text-emerald-300 hover:text-white transition-colors bg-emerald-500/10 hover:bg-emerald-500/30 px-3 py-1.5 rounded-md border border-emerald-500/30 shadow-md"
-                          title="Export to .phantom Vault File"
-                        >
-                          <Save className="w-3.5 h-3.5" />
-                          <span>.phantom</span>
-                        </button>
-                      )}
-                      <button
-                        onClick={generateShareLink}
-                        className="flex items-center gap-2 text-xs font-medium text-indigo-300 hover:text-white transition-colors bg-indigo-500/10 hover:bg-indigo-500/30 px-3 py-1.5 rounded-md border border-indigo-500/30 shadow-md"
-                        title="Generate Secure Link"
-                      >
-                        <LinkIcon className="w-3.5 h-3.5" />
-                        <span>Link</span>
-                      </button>
-                      <button
-                        onClick={() => setShowQR(!showQR)}
-                        className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5"
-                        title="Show QR Code"
-                      >
-                        <QrCode className="w-3.5 h-3.5" />
-                        <span>QR</span>
-                      </button>
-                      <button
-                        onClick={downloadTxtFile}
-                        className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5"
-                        title="Download TXT"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>TXT</span>
-                      </button>
-                      <button
-                        onClick={copyToClipboard}
-                        className={`flex items-center gap-2 text-xs font-medium transition-colors px-3 py-1.5 rounded-md shadow-lg border ${isCopied
-                          ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/30'
-                          : 'text-white bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30'
-                          }`}
-                        title="Copy to clipboard"
-                      >
-                        {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{isCopied ? 'Copied!' : 'Copy'}</span>
-                      </button>
-                    </div>{/* end action toolbar flex */}
-
-
-                    {/* Mobile Actions Menu Toggle */}
-                    <div className="sm:hidden absolute top-3 right-3 z-10">
-                      <button
-                        onClick={() => setMobileMenuOpen(true)}
-                        className="p-2 text-gray-400 hover:text-white bg-white/5 rounded-full border border-white/10"
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {showQR && (
-                    <div className="p-4 sm:p-6 border-b border-white/5 flex flex-col items-center justify-center bg-black/40">
-                      <div className="bg-white p-3 sm:p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                        <QRCodeSVG value={output} size={200} level="M" includeMargin={false} className="w-40 h-40 sm:w-50 sm:h-50" />
-                      </div>
-                      <p className="mt-4 text-xs font-medium text-indigo-300/70 tracking-wide uppercase text-center">Scan to extract payload</p>
-                    </div>
-                  )}
-
-                  <div className="p-4 sm:p-6 relative max-w-full">
-                    <p className={`font-mono text-xs sm:text-sm md:text-base select-all leading-relaxed max-h-[clamp(15rem,30vh,40rem)] overflow-y-auto w-full custom-scrollbar transition-colors duration-300 ${wrapOutput ? 'output-wrap' : 'output-nowrap'} ${isScrambling ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-gray-300'}`}>
-                      {displayedOutput}
-                    </p>
-                    {/* Text Diff Toggle (decode mode, when prev exists) */}
-                    {mode === 'decode' && prevDecoded && prevDecoded !== output && (
-                      <div className="mt-3 border-t border-white/5 pt-3">
-                        <button
-                          onClick={() => setShowDiff(!showDiff)}
-                          className="text-[11px] text-indigo-300 hover:text-white font-semibold flex items-center gap-1.5 transition-colors"
-                        >
-                          <AlignLeft className="w-3.5 h-3.5" />
-                          {showDiff ? 'Hide diff' : 'Show diff vs previous'}
-                        </button>
-                        {showDiff && (
-                          <div className="mt-2 text-xs font-mono text-gray-400 bg-black/40 rounded-xl p-3 max-h-32 overflow-y-auto custom-scrollbar">
-                            {output.split(' ').map((word, i) => (
-                              <span key={i} className={prevDecoded.split(' ').includes(word) ? 'text-gray-400' : 'text-yellow-300 underline'}>{word} </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                    {splitStats && (
+                      <span className="hidden sm:inline text-[10px] text-gray-600 font-mono">
+                        {splitStats.inputLen} → {splitStats.outputLen} chars
+                        {' '}({splitStats.inputLen > 0 ? `×${(splitStats.outputLen / splitStats.inputLen).toFixed(1)}` : '—'})
+                      </span>
                     )}
                   </div>
 
-                  {/* Cryptographic Telemetry Stats */}
-                  <div className="px-5 py-3 border-t border-white/5 bg-black/40 flex flex-wrap items-center justify-between text-[10px] sm:text-xs text-indigo-400/60 font-mono uppercase tracking-widest gap-2">
-                    <div className="flex items-center gap-4">
-                      <span>⏱️ Time: <span className="text-white/80 font-bold">{cryptoTime}ms</span></span>
-                      <span className="hidden sm:inline">|</span>
-                      <span>🔒 Algo: <span className="text-white/80 font-bold">AES-GCM (256-bit)</span></span>
-                      <span className="hidden md:inline">|</span>
-                      <span className="hidden md:inline">🔄 Derivation: <span className="text-white/80 font-bold">PBKDF2 (100k)</span></span>
+                  {/* Desktop Actions + toolbar controls */}
+                  <div className="hidden sm:flex flex-wrap gap-2 items-center relative z-10">
+                    {/* Output toolbar extras: word-wrap + history */}
+                    <button
+                      onClick={() => setWrapOutput(!wrapOutput)}
+                      title={wrapOutput ? 'Switch to no-wrap mode' : 'Switch to wrap mode'}
+                      className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-white transition-colors bg-white/5 px-2.5 py-1.5 rounded-md border border-white/5"
+                    >
+                      {wrapOutput ? <AlignLeft className="w-3.5 h-3.5" /> : <WrapText className="w-3.5 h-3.5" />}
+                      <span className="hidden lg:inline">{wrapOutput ? 'Wrapping' : 'No Wrap'}</span>
+                    </button>
+                    <button
+                      onClick={() => setShowHistory(true)}
+                      title="Session History"
+                      className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-white transition-colors bg-white/5 px-2.5 py-1.5 rounded-md border border-white/5"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span className="hidden lg:inline">History</span>
+                    </button>
+                    {/* Share expiry selector */}
+                    <select
+                      value={shareExpiry}
+                      onChange={e => setShareExpiry(e.target.value as typeof shareExpiry)}
+                      className="text-[10px] bg-black/60 border border-white/10 rounded-md text-gray-400 px-1.5 py-1.5 focus:outline-none"
+                      title="Link expiry"
+                    >
+                      <option value="none">∞ No expiry</option>
+                      <option value="1h">1h expiry</option>
+                      <option value="24h">24h expiry</option>
+                      <option value="7d">7d expiry</option>
+                    </select>
+                    {mode === 'encode' && (
+                      <button
+                        onClick={downloadVaultFile}
+                        className="flex items-center gap-2 text-xs font-medium text-emerald-300 hover:text-white transition-colors bg-emerald-500/10 hover:bg-emerald-500/30 px-3 py-1.5 rounded-md border border-emerald-500/30 shadow-md"
+                        title="Export to .phantom Vault File"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>.phantom</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={generateShareLink}
+                      className="flex items-center gap-2 text-xs font-medium text-indigo-300 hover:text-white transition-colors bg-indigo-500/10 hover:bg-indigo-500/30 px-3 py-1.5 rounded-md border border-indigo-500/30 shadow-md"
+                      title="Generate Secure Link"
+                    >
+                      <LinkIcon className="w-3.5 h-3.5" />
+                      <span>Link</span>
+                    </button>
+                    <button
+                      onClick={() => setShowQR(!showQR)}
+                      className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5"
+                      title="Show QR Code"
+                    >
+                      <QrCode className="w-3.5 h-3.5" />
+                      <span>QR</span>
+                    </button>
+                    <button
+                      onClick={downloadTxtFile}
+                      className="flex items-center gap-2 text-xs font-medium text-gray-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-md border border-white/5"
+                      title="Download TXT"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>TXT</span>
+                    </button>
+                    <button
+                      onClick={copyToClipboard}
+                      className={`flex items-center gap-2 text-xs font-medium transition-colors px-3 py-1.5 rounded-md shadow-lg border ${isCopied
+                        ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/30'
+                        : 'text-white bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30'
+                        }`}
+                      title="Copy to clipboard"
+                    >
+                      {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{isCopied ? 'Copied!' : 'Copy'}</span>
+                    </button>
+                  </div>{/* end action toolbar flex */}
+
+
+                  {/* Mobile Actions Menu Toggle */}
+                  <div className="sm:hidden absolute top-3 right-3 z-10">
+                    <button
+                      onClick={() => setMobileMenuOpen(true)}
+                      className="p-2 text-gray-400 hover:text-white bg-white/5 rounded-full border border-white/10"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {showQR && (
+                  <div className="p-4 sm:p-6 border-b border-white/5 flex flex-col items-center justify-center bg-black/40">
+                    <div className="bg-white p-3 sm:p-4 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                      <QRCodeSVG value={output} size={200} level="M" includeMargin={false} className="w-40 h-40 sm:w-50 sm:h-50" />
                     </div>
-                    <div className="flex items-center gap-3">
-                      {mode === 'decode' && output && (() => {
-                        const words = output.trim().split(/\s+/).filter(Boolean).length;
-                        return <span className="text-indigo-400/50">{words} words · {output.length.toLocaleString()} chars</span>;
-                      })()}
-                      <span>Status: <span className="text-emerald-400 font-bold">SECURED</span></span>
+                    <p className="mt-4 text-xs font-medium text-indigo-300/70 tracking-wide uppercase text-center">Scan to extract payload</p>
+                  </div>
+                )}
+
+                <div className="p-4 sm:p-6 relative max-w-full">
+                  <p className={`font-mono text-xs sm:text-sm md:text-base select-all leading-relaxed max-h-[clamp(15rem,30vh,40rem)] overflow-y-auto w-full custom-scrollbar transition-colors duration-300 ${wrapOutput ? 'output-wrap' : 'output-nowrap'} ${isScrambling ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'text-gray-300'}`}>
+                    {displayedOutput}
+                  </p>
+                  {/* Text Diff Toggle (decode mode, when prev exists) */}
+                  {mode === 'decode' && prevDecoded && prevDecoded !== output && (
+                    <div className="mt-3 border-t border-white/5 pt-3">
+                      <button
+                        onClick={() => setShowDiff(!showDiff)}
+                        className="text-[11px] text-indigo-300 hover:text-white font-semibold flex items-center gap-1.5 transition-colors"
+                      >
+                        <AlignLeft className="w-3.5 h-3.5" />
+                        {showDiff ? 'Hide diff' : 'Show diff vs previous'}
+                      </button>
+                      {showDiff && (
+                        <div className="mt-2 text-xs font-mono text-gray-400 bg-black/40 rounded-xl p-3 max-h-32 overflow-y-auto custom-scrollbar">
+                          {output.split(' ').map((word, i) => (
+                            <span key={i} className={prevDecoded.split(' ').includes(word) ? 'text-gray-400' : 'text-yellow-300 underline'}>{word} </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                  )}
+                </div>
+
+                {/* Cryptographic Telemetry Stats */}
+                <div className="px-5 py-3 border-t border-white/5 bg-black/40 flex flex-wrap items-center justify-between text-[10px] sm:text-xs text-indigo-400/60 font-mono uppercase tracking-widest gap-2">
+                  <div className="flex items-center gap-4">
+                    <span>⏱️ Time: <span className="text-white/80 font-bold">{cryptoTime}ms</span></span>
+                    <span className="hidden sm:inline">|</span>
+                    <span>🔒 Algo: <span className="text-white/80 font-bold">AES-GCM (256-bit)</span></span>
+                    <span className="hidden md:inline">|</span>
+                    <span className="hidden md:inline">🔄 Derivation: <span className="text-white/80 font-bold">PBKDF2 (100k)</span></span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {mode === 'decode' && output && (() => {
+                      const words = output.trim().split(/\s+/).filter(Boolean).length;
+                      return <span className="text-indigo-400/50">{words} words · {output.length.toLocaleString()} chars</span>;
+                    })()}
+                    <span>Status: <span className="text-emerald-400 font-bold">SECURED</span></span>
                   </div>
                 </div>
               </motion.div>

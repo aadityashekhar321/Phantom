@@ -6,9 +6,23 @@ import { Clock, Tag, ArrowRight } from 'lucide-react';
 
 const changelog = [
     {
+        version: 'v1.5.0',
+        date: '2026-03-04',
+        tag: 'latest',
+        changes: [
+            { type: 'feat', text: 'Deniable Vault (Decoy Mode) — dual-payload AES encryption; revealing the decoy password shows a fake plaintext, protecting under coercion' },
+            { type: 'feat', text: 'Self-Destruct Timer — settings gear in Navbar to toggle auto-clear with 30s/60s countdown; output is wiped immediately after the timer expires' },
+            { type: 'feat', text: 'Live Entropy Bar — real-time bit-strength calculation displayed alongside the password strength meter' },
+            { type: 'feat', text: 'Privacy Threat Model — responsive two-column cards: "What Phantom Protects" vs "What It Cannot Protect" on the Architecture & Trust page' },
+            { type: 'feat', text: '"Why Phantom?" Comparison — side-by-side Phantom vs. Signal/WhatsApp feature comparison using responsive cards (no horizontal scroll)' },
+            { type: 'fix', text: 'Fixed JSX nesting bug in output panel that caused the build to fail after the Decoy Mode countdown overlay was added' },
+            { type: 'fix', text: 'Resolved all ESLint no-explicit-any and no-unused-vars errors in Navbar, SettingsProvider, crypto.ts, and cryptoWorkerClient.ts' },
+        ],
+    },
+    {
         version: 'v1.4.0',
         date: '2026-03-01',
-        tag: 'latest',
+        tag: null,
         changes: [
             { type: 'feat', text: 'Password generator — instant cryptographically random password creation' },
             { type: 'feat', text: 'Session history panel — browse and restore recent encrypt/decrypt operations' },

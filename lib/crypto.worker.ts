@@ -7,6 +7,11 @@ self.onmessage = async (e: MessageEvent) => {
         let result;
         if (type === 'encode') {
             result = await encryptMessage(text, password);
+        } else if (type === 'encodeDuo') {
+            // Need to import dynamically since e.data might have extra fields
+            const { decoyText, decoyPassword } = e.data;
+            const { encryptDuoMessage } = await import('./crypto');
+            result = await encryptDuoMessage(text, password, decoyText, decoyPassword);
         } else if (type === 'decode') {
             result = await decryptMessage(text, password);
         } else {

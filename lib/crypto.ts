@@ -68,7 +68,27 @@ export async function encryptMessage(text: string, password: string): Promise<st
 
   // Convert to Base64 and obfuscate
   const base64Str = arrayBufferToBase64(combined.buffer);
-  return obfuscateTokens(base64Str);
+  return obfuscateTokens(base64Str, 'PHMX');
+}
+
+/**
+ * Encrypt TWO messages into one string.
+ * Format: PHMD<rev_b64_1>DUO<rev_b64_2>
+ */
+export async function encryptDuoMessage(
+  mainText: string,
+  mainPass: string,
+  decoyText: string,
+  decoyPass: string
+): Promise<string> {
+  const cipherA = await encryptMessage(mainText, mainPass);
+  const cipherB = await encryptMessage(decoyText, decoyPass);
+
+  // Strip prefixes and join
+  const dataA = cipherA.slice(4);
+  const dataB = cipherB.slice(4);
+
+  return `PHMD${dataA}DUO${dataB}`;
 }
 
 /**
@@ -101,6 +121,18 @@ export async function decryptMessage(encryptedBase64: string, password: string):
 
     return decoder.decode(decryptedBuf);
   } catch {
+    // If it's a DUO message, try the other side
+    if (encryptedBase64.startsWith('PHMD') && encryptedBase64.includes('DUO')) {
+      const parts = encryptedBase64.slice(4).split('DUO');
+      for (const part of parts) {
+        try {
+          const result = await decryptMessage(`PHMX${part}`, password);
+          return result;
+        } catch {
+          continue;
+        }
+      }
+    }
     throw new Error('Decryption failed. Incorrect password or modified ciphertext.');
   }
 }
@@ -128,9 +160,11 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 // Compact token obfuscation: prefix + reversed base64
 // Format: PHMX<reversed_base64>
 // This avoids the multi-line separator overhead that inflated large-file ciphertext by ~35%
-function obfuscateTokens(base64Str: string): string {
+// Compact token obfuscation: prefix + reversed base64
+// Format: PREFIX<reversed_base64>
+function obfuscateTokens(base64Str: string, prefix = 'PHMX'): string {
   const reversed = base64Str.split('').reverse().join('');
-  return `PHMX${reversed}`;
+  return `${prefix}${reversed}`;
 }
 
 function deobfuscateTokens(obfuscatedStr: string): string {

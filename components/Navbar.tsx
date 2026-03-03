@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Palette, Check } from 'lucide-react';
+import { Menu, X, Palette, Check, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useTheme } from '@/components/ThemeProvider';
@@ -97,6 +97,14 @@ export function Navbar() {
                                 )}
                             </AnimatePresence>
                         </div>
+                        {/* Settings button */}
+                        <button
+                            onClick={() => (window as Window & { _phantomToggleSettings?: () => void })._phantomToggleSettings?.()}
+                            className="p-2 text-gray-500 hover:text-white transition-colors rounded-xl hover:bg-white/5"
+                            title="Global Settings"
+                        >
+                            <Settings className="w-4 h-4" />
+                        </button>
                     </div>
 
                     {/* Mobile controls */}
