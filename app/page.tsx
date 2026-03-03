@@ -50,7 +50,9 @@ export default function Home() {
   const [inputScrambleText, setInputScrambleText] = useState('');
 
   // Category 2: Share expiry, text diff, batch files, prev decoded, WebAuthn, Dark Web Mode
-  const [shareExpiry, setShareExpiry] = useState<'1h' | '24h' | '7d' | 'none'>('none');
+  const [shareExpiry, setShareExpiry] = useState<'1h' | '24h' | '7d' | 'none' | 'custom'>('none');
+  const [showLinkSettings, setShowLinkSettings] = useState(false);
+  const [customExpiryDate, setCustomExpiryDate] = useState<string>('');
   const [prevDecoded, setPrevDecoded] = useState<string | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
@@ -607,16 +609,34 @@ export default function Home() {
   const generateShareLink = () => {
     if (!output) return;
     let expMs = '';
+
     if (shareExpiry !== 'none') {
-      const durations: Record<string, number> = { '1h': 3600000, '24h': 86400000, '7d': 604800000 };
-      expMs = `&exp=${Date.now() + durations[shareExpiry]}`;
+      if (shareExpiry === 'custom' && customExpiryDate) {
+        const timestamp = new Date(customExpiryDate).getTime();
+        if (isNaN(timestamp)) {
+          toast.error('Please select a valid custom expiry date.');
+          return;
+        }
+        expMs = `&exp=${timestamp}`;
+      } else {
+        const durations: Record<string, number> = { '1h': 3600000, '24h': 86400000, '7d': 604800000 };
+        // @ts-ignore - durations[shareExpiry] is safe here
+        expMs = `&exp=${Date.now() + durations[shareExpiry]}`;
+      }
     }
+
     const url = `${window.location.origin}/#data=${encodeURIComponent(output)}${expMs}`;
     navigator.clipboard.writeText(url);
     triggerHaptic();
-    const label = shareExpiry === 'none' ? 'no expiry' : `expires in ${shareExpiry}`;
+
+    let label = '';
+    if (shareExpiry === 'none') label = 'no expiry';
+    else if (shareExpiry === 'custom') label = `expires at ${new Date(customExpiryDate).toLocaleString()}`;
+    else label = `expires in ${shareExpiry}`;
+
     toast.success(`Secure link copied (${label})!`);
     setMobileMenuOpen(false);
+    setShowLinkSettings(false);
   };
 
   const handlePanic = () => {
@@ -1137,13 +1157,14 @@ export default function Home() {
                   {/* Inner edge highlight */}
                   <div className="absolute inset-0 rounded-3xl border border-white/5 pointer-events-none" />
 
-                  <div className="flex items-start sm:items-center justify-between px-5 py-4 border-b border-white/5 gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs sm:text-sm font-semibold text-indigo-300 tracking-widest uppercase">
+                  <div className="flex flex-wrap items-center justify-between px-5 py-4 border-b border-white/5 gap-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                      <span className="text-xs sm:text-sm font-semibold text-indigo-300 tracking-widest uppercase flex items-center gap-2">
+                        <ShieldCheck className="w-3.5 h-3.5" />
                         {mode === 'encode' ? 'Locked Secret Code' : 'Unlocked Message'}
                       </span>
                       {splitStats && (
-                        <span className="hidden sm:inline text-[10px] text-gray-600 font-mono">
+                        <span className="text-[10px] text-gray-500 font-mono bg-white/5 px-2 py-0.5 rounded border border-white/5">
                           {splitStats?.inputLen} → {splitStats?.outputLen} chars
                           {' '}({splitStats?.inputLen && splitStats.inputLen > 0 ? `×${(splitStats.outputLen / splitStats.inputLen).toFixed(1)}` : '—'})
                         </span>
@@ -1151,12 +1172,12 @@ export default function Home() {
                     </div>
 
                     {/* Desktop Actions + toolbar controls */}
-                    <div className="hidden sm:flex flex-wrap gap-2 items-center relative z-10">
+                    <div className="flex flex-wrap gap-2 items-center relative">
                       {/* Output toolbar extras: word-wrap + history + split diff */}
                       <button
                         onClick={() => setWrapOutput(!wrapOutput)}
                         title={wrapOutput ? 'Switch to no-wrap mode' : 'Switch to wrap mode'}
-                        className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-white transition-colors bg-white/5 px-2.5 py-1.5 rounded-md border border-white/5"
+                        className={`flex items-center gap-1.5 text-xs font-medium transition-colors px-2.5 py-1.5 rounded-md border ${wrapOutput ? 'text-indigo-200 bg-indigo-500/10 border-indigo-500/20' : 'text-gray-500 hover:text-white bg-white/5 border-white/5'}`}
                       >
                         {wrapOutput ? <AlignLeft className="w-3.5 h-3.5" /> : <WrapText className="w-3.5 h-3.5" />}
                         <span className="hidden lg:inline">{wrapOutput ? 'Wrapping' : 'No Wrap'}</span>
@@ -1164,7 +1185,7 @@ export default function Home() {
                       <button
                         onClick={() => setShowStructuralDiff(!showStructuralDiff)}
                         title="Split-screen structural diff"
-                        className={`flex items-center gap-1.5 text-xs font-medium transition-colors px-2.5 py-1.5 rounded-md border ${showStructuralDiff ? 'text-indigo-300 bg-indigo-500/20 border-indigo-500/30' : 'text-gray-500 hover:text-white bg-white/5 border-white/5'}`}
+                        className={`flex items-center gap-1.5 text-xs font-medium transition-colors px-2.5 py-1.5 rounded-md border ${showStructuralDiff ? 'text-emerald-300 bg-emerald-500/20 border-emerald-500/30' : 'text-gray-500 hover:text-white bg-white/5 border-white/5'}`}
                       >
                         <Files className="w-3.5 h-3.5" />
                         <span className="hidden lg:inline">Split Diff</span>
@@ -1194,9 +1215,9 @@ export default function Home() {
                             )}
                             {id === 'link' && (
                               <button
-                                onClick={generateShareLink}
-                                className="flex items-center gap-2 text-xs font-medium text-indigo-300 hover:text-white transition-colors bg-indigo-500/10 hover:bg-indigo-500/30 px-3 py-1.5 rounded-md border border-indigo-500/30 shadow-md cursor-grab active:cursor-grabbing"
-                                title="Generate Secure Link"
+                                onClick={() => setShowLinkSettings(!showLinkSettings)}
+                                className={`flex items-center gap-2 text-xs font-medium transition-colors px-3 py-1.5 rounded-md border shadow-md cursor-grab active:cursor-grabbing ${showLinkSettings ? 'text-white bg-indigo-500 shadow-indigo-500/20 border-indigo-400' : 'text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/30 border-indigo-500/30'}`}
+                                title="Link Sharing Settings"
                               >
                                 <GripVertical className="w-3 h-3 opacity-30" />
                                 <LinkIcon className="w-3.5 h-3.5" />
@@ -1243,18 +1264,62 @@ export default function Home() {
                         ))}
                       </Reorder.Group>
 
-                      {/* Share expiry selector */}
-                      <select
-                        value={shareExpiry}
-                        onChange={e => setShareExpiry(e.target.value as typeof shareExpiry)}
-                        className="text-[10px] bg-black/60 border border-white/10 rounded-md text-gray-400 px-1.5 py-1.5 focus:outline-none ml-1"
-                        title="Link expiry"
-                      >
-                        <option value="none">∞ No expiry</option>
-                        <option value="1h">1h expiry</option>
-                        <option value="24h">24h expiry</option>
-                        <option value="7d">7d expiry</option>
-                      </select>
+                      {/* Link Sharing Settings (Floating Panel) */}
+                      <AnimatePresence>
+                        {showLinkSettings && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            className="absolute top-full right-0 mt-3 z-50 bg-[#0a0a0f]/95 border border-indigo-500/30 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl w-72 space-y-4"
+                          >
+                            <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-2">
+                              <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Share Settings</span>
+                              <button onClick={() => setShowLinkSettings(false)} className="text-gray-500 hover:text-white transition-colors">
+                                <CloseIcon className="w-3 h-3" />
+                              </button>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Expiry Duration</label>
+                                <select
+                                  value={shareExpiry}
+                                  onChange={e => setShareExpiry(e.target.value as typeof shareExpiry)}
+                                  className="text-xs bg-black/60 border border-white/10 rounded-lg text-gray-200 px-3 py-2 focus:outline-none w-full focus:border-indigo-500/50 transition-colors"
+                                >
+                                  <option value="none">∞ No expiry</option>
+                                  <option value="1h">1h expiry</option>
+                                  <option value="24h">24h expiry</option>
+                                  <option value="7d">7d expiry</option>
+                                  <option value="custom">📅 Custom Date/Time</option>
+                                </select>
+                              </div>
+
+                              {shareExpiry === 'custom' && (
+                                <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                                  <label className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Select Date & Time</label>
+                                  <input
+                                    type="datetime-local"
+                                    value={customExpiryDate}
+                                    onChange={(e) => setCustomExpiryDate(e.target.value)}
+                                    className="text-xs bg-black/60 border border-white/10 rounded-lg text-gray-200 px-3 py-2 focus:outline-none w-full [color-scheme:dark] focus:border-indigo-500/50 transition-colors"
+                                  />
+                                </div>
+                              )}
+
+                              <button
+                                onClick={generateShareLink}
+                                className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
+                              >
+                                <LinkIcon className="w-3 h-3" />
+                                Generate & Copy Link
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
                     </div>{/* end action toolbar flex */}
 
                     {/* Mobile Actions Menu Toggle */}
