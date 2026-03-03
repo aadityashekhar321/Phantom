@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '@/components/GlassCard';
-import { MagneticButton } from '@/components/MagneticButton';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { Lock, Unlock, Trash2, Plus, Eye, EyeOff, FileText, Shield, Shuffle, PenSquare, Sparkles, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
@@ -264,25 +263,20 @@ export default function NotesPage() {
 
                 {/* Editor Area */}
                 {activeNote ? (
-                    <GlassCard className="h-full min-h-[600px] flex flex-col xl:p-8 p-5 relative overflow-hidden shadow-2xl">
-                        {/* Title Bar */}
-                        <div className="flex items-center justify-between border-b border-white/5 pb-5 mb-5 shrink-0 z-10">
-                            <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-inner ${activeNote.isLocked ? 'bg-gradient-to-br from-violet-500/30 to-indigo-500/30 border border-violet-500/40 text-violet-300 shadow-violet-500/20' : 'bg-white/5 border border-white/10 text-gray-400'}`}>
-                                    {activeNote.isLocked ? <Lock className="w-5 h-5" /> : <PenSquare className="w-5 h-5" />}
-                                </div>
-                                <div>
-                                    <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">{activeNote.title}</h2>
-                                    <p className="text-xs text-indigo-300/50 font-mono mt-0.5">Note ID: {activeNote.id}</p>
-                                </div>
+                    <GlassCard className="h-full min-h-[600px] flex flex-col xl:p-8 p-5 sm:p-6 relative overflow-hidden shadow-2xl">
+                        {/* Title Bar - Simplified */}
+                        <div className="flex items-center justify-between pb-4 sm:pb-5 mb-2 shrink-0 z-10 border-b border-white/5">
+                            <div className="flex flex-col gap-1">
+                                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{activeNote.title}</h2>
+                                <p className="text-xs text-gray-500 font-mono">Note ID: {activeNote.id} • {activeNote.createdAt.toLocaleDateString()}</p>
                             </div>
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 px-3 py-1.5 rounded-lg whitespace-nowrap hidden sm:block">
-                                {activeNote.createdAt.toLocaleDateString()}
-                            </span>
+                            <div className={`w-12 h-12 rounded-2xl hidden sm:flex items-center justify-center ${activeNote.isLocked ? 'bg-violet-500/10 text-violet-400' : 'bg-white/5 text-gray-400'}`}>
+                                {activeNote.isLocked ? <Lock className="w-6 h-6" /> : <PenSquare className="w-6 h-6" />}
+                            </div>
                         </div>
 
                         {/* Text Editor OR Lock Screen */}
-                        <div className="flex-1 relative z-10 flex flex-col">
+                        <div className="flex-1 relative z-10 flex flex-col pt-2">
                             <AnimatePresence mode="wait">
                                 {activeNote.isLocked ? (
                                     <motion.div
@@ -290,32 +284,29 @@ export default function NotesPage() {
                                         initial={{ opacity: 0, filter: 'blur(10px)', scale: 0.98 }}
                                         animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
                                         exit={{ opacity: 0, filter: 'blur(10px)', scale: 0.98 }}
-                                        transition={{ duration: 0.4 }}
+                                        transition={{ duration: 0.3 }}
                                         className="flex-1 flex flex-col items-center justify-center text-center px-4"
                                     >
                                         <div className="relative mb-6">
-                                            <div className="absolute inset-0 bg-violet-500/20 blur-[30px] rounded-full scale-150 animate-pulse" />
-                                            <div className="w-24 h-24 bg-gradient-to-b from-black/80 to-black/40 border-2 border-violet-500/30 rounded-3xl flex items-center justify-center relative z-10 shadow-2xl shadow-violet-500/20 backdrop-blur-xl">
-                                                <Lock className="w-10 h-10 text-violet-400" />
+                                            <div className="absolute inset-0 bg-violet-500/20 blur-[40px] rounded-full scale-150 animate-pulse" />
+                                            <div className="w-20 h-20 bg-black/60 border border-violet-500/30 rounded-2xl flex items-center justify-center relative z-10 shadow-2xl backdrop-blur-md">
+                                                <Lock className="w-8 h-8 text-violet-400" />
                                             </div>
                                         </div>
-                                        <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">Access Restricted</h3>
-                                        <p className="text-gray-400 max-w-sm mb-6 leading-relaxed">
-                                            This note is deeply encrypted. Provide the exact key below to decrypt the payload on your device.
+                                        <h3 className="text-xl sm:text-2xl font-bold text-white mb-2 tracking-tight">Note Locked</h3>
+                                        <p className="text-gray-400 max-w-sm mb-6 leading-relaxed text-sm sm:text-base">
+                                            Provide the exact AES-256-GCM key below to decrypt and reveal this payload.
                                         </p>
-                                        <div className="inline-flex items-center gap-2 bg-black/50 border border-white/10 px-4 py-2 rounded-xl text-xs font-mono text-gray-500">
-                                            <KeyRound className="w-3.5 h-3.5" /> Payload Cipher: AES-256-GCM
-                                        </div>
                                     </motion.div>
                                 ) : (
                                     <motion.textarea
                                         key="unlocked-editor"
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="flex-1 w-full h-full bg-black/30 border border-white/5 rounded-3xl p-5 sm:p-6 text-gray-200 text-base leading-loose resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/30 custom-scrollbar shadow-inner backdrop-blur-sm"
-                                        placeholder="Start typing your highly sensitive thoughts here... (Markdown not supported yet)"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="flex-1 w-full h-full bg-transparent text-gray-200 text-base leading-relaxed resize-none focus:outline-none custom-scrollbar"
+                                        placeholder="Start typing your highly sensitive thoughts here..."
                                         value={activeNote.content}
                                         onChange={e => updateContent(e.target.value)}
                                     />
@@ -323,13 +314,12 @@ export default function NotesPage() {
                             </AnimatePresence>
                         </div>
 
-                        {/* Lock / Unlock Controls Footer */}
-                        <div className="mt-6 shrink-0 bg-black/60 border border-white/10 rounded-3xl p-4 sm:p-5 backdrop-blur-xl shadow-2xl relative z-10 flex flex-col sm:flex-row gap-3">
-                            <div className="relative flex-1 group">
-                                <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-600/0 via-indigo-600/0 to-violet-600/0 rounded-2xl blur opacity-30 group-focus-within:opacity-100 group-focus-within:from-violet-600/40 group-focus-within:to-indigo-600/40 transition duration-1000 group-focus-within:duration-200 pointer-events-none" />
-                                <div className="relative flex items-center bg-black rounded-2xl border border-white/10 group-focus-within:border-white/20 shadow-inner">
-                                    <div className="pl-4 pr-2 text-gray-500 group-focus-within:text-violet-400 transition-colors">
-                                        <KeyRound className="w-5 h-5" />
+                        {/* Lock / Unlock Controls Footer - Clean flat inputs */}
+                        <div className="mt-4 pt-4 border-t border-white/5 shrink-0 z-10 flex flex-col sm:flex-row gap-3">
+                            <div className="relative flex-1">
+                                <div className="relative flex items-center bg-white/5 focus-within:bg-white/10 hover:bg-white/10 rounded-xl transition-colors border border-transparent focus-within:border-white/10">
+                                    <div className="pl-4 pr-2 text-gray-500">
+                                        <KeyRound className="w-4 h-4" />
                                     </div>
                                     <input
                                         type={showPwd ? 'text' : 'password'}
@@ -337,34 +327,34 @@ export default function NotesPage() {
                                         onChange={e => setPassword(e.target.value)}
                                         onKeyDown={handlePasswordKeyDown}
                                         placeholder={activeNote.isLocked ? "Enter decryption key..." : "Assign an encryption key..."}
-                                        className="w-full bg-transparent py-4 text-sm sm:text-base text-white placeholder-gray-600 focus:outline-none font-mono tracking-wider"
+                                        className="w-full bg-transparent py-4 text-sm sm:text-base text-white placeholder-gray-500 focus:outline-none font-mono tracking-wider"
                                     />
                                     <div className="pr-3 flex items-center gap-1">
                                         {!activeNote.isLocked && (
-                                            <button type="button" onClick={() => setPassword(generatePassword())} title="Generate strong random password" className="text-gray-500 hover:text-white hover:bg-white/10 transition-colors p-2 rounded-xl">
+                                            <button type="button" onClick={() => setPassword(generatePassword())} title="Generate strong random password" className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg">
                                                 <Shuffle className="w-4 h-4" />
                                             </button>
                                         )}
-                                        <button type="button" onClick={() => setShowPwd(!showPwd)} title="Toggle visibility" className="text-gray-500 hover:text-white hover:bg-white/10 transition-colors p-2 rounded-xl">
+                                        <button type="button" onClick={() => setShowPwd(!showPwd)} title="Toggle visibility" className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg">
                                             {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <MagneticButton
+                            <button
                                 onClick={activeNote.isLocked ? unlockNote : lockNote}
                                 disabled={loading || !password}
-                                className={`shrink-0 w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-bold transition-all shadow-lg text-white disabled:opacity-50 disabled:pointer-events-none ${activeNote.isLocked ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:shadow-violet-500/25' : 'bg-white/[0.05] hover:bg-white/10 border border-white/10 hover:border-white/20'}`}
+                                className={`shrink-0 w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold transition-all text-sm disabled:opacity-50 disabled:pointer-events-none ${activeNote.isLocked ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
                             >
                                 {loading ? (
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 ) : activeNote.isLocked ? (
-                                    <><Unlock className="w-5 h-5" /> EXECUTING DECRYPT</>
+                                    <><Unlock className="w-4 h-4" /> Decrypt Note</>
                                 ) : (
-                                    <><Lock className="w-5 h-5" /> SECURE & LOCK</>
+                                    <><Lock className="w-4 h-4" /> Secure & Lock</>
                                 )}
-                            </MagneticButton>
+                            </button>
                         </div>
                     </GlassCard>
                 ) : (
