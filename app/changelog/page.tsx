@@ -7,9 +7,23 @@ import { useT } from '@/components/LanguageProvider';
 
 const changelog = [
     {
-        version: 'v2.3.0',
+        version: 'v2.4.0',
         date: '2026-03-04',
         tag: 'latest',
+        changes: [
+            { type: 'feat', text: 'How It Works — scroll-triggered staggered fade-up animations on all 3 step rows using Framer Motion whileInView' },
+            { type: 'feat', text: 'Step icon circles now spring-animate on hover with a subtle scale + ring pulse effect' },
+            { type: 'feat', text: 'Advanced Image Handling — Steganography and Full Encryption cards animate with lift + glow border + icon shake on hover' },
+            { type: 'feat', text: 'Background Shield decoration on Image Handling card now slowly breathes (rotate + scale loop)' },
+            { type: 'feat', text: 'Comparison table rows highlight with mode-tinted backgrounds on hover; mobile comparison cards scale on hover' },
+            { type: 'perf', text: 'All animations use GPU-only properties (opacity, transform) — zero layout shifts, no repaints, glitch-free on all screen sizes' },
+        ],
+    },
+    {
+        version: 'v2.3.0',
+        date: '2026-03-04',
+        tag: '',
+
         changes: [
             { type: 'refactor', text: 'Architecture & Trust page — reordered all 10 sections into a logical Why → Mission → Use Cases → Technical Specs → Pipeline → Interactive Demo → Verified by Math → Warnings → Threat Model → FAQ flow' },
             { type: 'feat', text: 'Zero-Knowledge FAQ expanded from 7 to 11 entries with new questions: AES-256-GCM vs other modes, PBKDF2 iteration rationale, Vault vs Steganography comparison, and server-outage resilience' },
