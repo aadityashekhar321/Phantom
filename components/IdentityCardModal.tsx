@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { X, Download, CreditCard, ChevronLeft, ChevronRight, Copy, Check } from 'lucide-react';
 
 interface Props {
@@ -222,6 +222,42 @@ export function IdentityCardModal({ isOpen, onClose, ciphertext }: Props) {
     const [themeIdx, setThemeIdx] = useState(0);
     const [rendered, setRendered] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [downloaded, setDownloaded] = useState(false);
+
+    // ── 3D Tilt & Glare setup ──
+    const rectRef = useRef<HTMLDivElement>(null);
+    const mouseX = useMotionValue(0.5); // 0 to 1 relative
+    const mouseY = useMotionValue(0.5);
+
+    // Spring physics for smooth return
+    const springConfig = { damping: 20, stiffness: 150, mass: 0.5 };
+    const springX = useSpring(mouseX, springConfig);
+    const springY = useSpring(mouseY, springConfig);
+
+    // Map 0-1 relative positions to rotation degrees (-6 to +6)
+    const rotateX = useTransform(springY, [0, 1], [6, -6]);
+    const rotateY = useTransform(springX, [0, 1], [-6, 6]);
+
+    // Map to glare position/intensity
+    const glareX = useTransform(springX, [0, 1], ['-100%', '200%']);
+    const glareY = useTransform(springY, [0, 1], ['-100%', '200%']);
+    const glareOpacity = useTransform(springY, [0, 1], [0.1, 0.5]);
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!rectRef.current) return;
+        const rect = rectRef.current.getBoundingClientRect();
+        // Calculate relative position 0..1
+        const x = (e.clientX - rect.left) / rect.width;
+        const y = (e.clientY - rect.top) / rect.height;
+        mouseX.set(x);
+        mouseY.set(y);
+    };
+
+    const handleMouseLeave = () => {
+        // Reset to center
+        mouseX.set(0.5);
+        mouseY.set(0.5);
+    };
 
     const draw = useCallback(async () => {
         if (!canvasRef.current) return;
@@ -240,7 +276,8 @@ export function IdentityCardModal({ isOpen, onClose, ciphertext }: Props) {
         const link = document.createElement('a');
         link.download = `phantom-card-${Date.now()}.png`;
         link.href = canvas.toDataURL('image/png');
-        link.click();
+        setDownloaded(true);
+        setTimeout(() => setDownloaded(false), 2000);
     };
 
     const handleCopy = async () => {
@@ -411,36 +448,62 @@ export function IdentityCardModal({ isOpen, onClose, ciphertext }: Props) {
                                 </motion.span>
                             </div>
 
-                            {/* ── Card preview ── */}
-                            <div
-                                className="rounded-2xl overflow-hidden border bg-black/50 relative"
-                                style={{ borderColor: THEMES[themeIdx].accent + '25' }}
-                            >
-                                {/* Rendering shimmer overlay */}
-                                <AnimatePresence>
-                                    {!rendered && (
-                                        <motion.div
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-                                        >
-                                            <div className="flex items-center gap-2 text-gray-400 text-xs">
-                                                <motion.div
-                                                    animate={{ rotate: 360 }}
-                                                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                                    className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
-                                                />
-                                                Rendering…
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                                <canvas
-                                    ref={canvasRef}
-                                    className="w-full"
-                                    style={{ aspectRatio: '800/440', imageRendering: 'auto' }}
-                                />
+                            {/* ── Card preview (3D Tilt Container) ── */}
+                            <div className="perspective-[1200px] w-full relative">
+                                <motion.div
+                                    ref={rectRef}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseLeave={handleMouseLeave}
+                                    style={{
+                                        rotateX,
+                                        rotateY,
+                                        transformStyle: 'preserve-3d',
+                                        borderColor: THEMES[themeIdx].accent + '40',
+                                        boxShadow: `0 20px 40px -10px rgba(0,0,0,0.8), 0 0 40px -10px ${THEMES[themeIdx].accent}30`
+                                    }}
+                                    className="rounded-2xl overflow-hidden border bg-black/50 relative cursor-crosshair transition-all duration-300"
+                                >
+                                    {/* Shading/Glare Layer */}
+                                    <motion.div
+                                        className="absolute inset-0 z-20 pointer-events-none mix-blend-overlay"
+                                        style={{
+                                            background: 'radial-gradient(circle at center, white 0%, transparent 60%)',
+                                            opacity: glareOpacity,
+                                            left: glareX,
+                                            top: glareY,
+                                            width: '200%',
+                                            height: '200%',
+                                            transform: 'translate(-50%, -50%)'
+                                        }}
+                                    />
+
+                                    {/* Rendering shimmer overlay */}
+                                    <AnimatePresence>
+                                        {!rendered && (
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                className="absolute inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                                            >
+                                                <div className="flex items-center gap-2 text-gray-400 text-xs shadow-black drop-shadow-md">
+                                                    <motion.div
+                                                        animate={{ rotate: 360 }}
+                                                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                                        className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                                                    />
+                                                    Rendering…
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                    
+                                    <canvas
+                                        ref={canvasRef}
+                                        className="w-full relative z-10"
+                                        style={{ aspectRatio: '800/440', imageRendering: 'auto' }}
+                                    />
+                                </motion.div>
                             </div>
 
                             {/* ── Actions ── */}
@@ -453,8 +516,12 @@ export function IdentityCardModal({ isOpen, onClose, ciphertext }: Props) {
                                     className="flex-1 flex items-center justify-center gap-2 py-2.5 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-40 disabled:pointer-events-none"
                                     style={{ background: `linear-gradient(135deg, ${THEMES[themeIdx].stops[1]}, ${THEMES[themeIdx].stops[2]})` }}
                                 >
-                                    <Download className="w-4 h-4" />
-                                    Download PNG
+                                    <AnimatePresence mode="wait">
+                                        {downloaded
+                                            ? <motion.span key="check" initial={{ scale: 0.7 }} animate={{ scale: 1 }} className="flex items-center gap-1.5"><Check className="w-4 h-4" /> Downloaded!</motion.span>
+                                            : <motion.span key="dl" initial={{ scale: 0.7 }} animate={{ scale: 1 }} className="flex items-center gap-1.5"><Download className="w-4 h-4" /> Download PNG</motion.span>
+                                        }
+                                    </AnimatePresence>
                                 </motion.button>
 
                                 <motion.button

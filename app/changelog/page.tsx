@@ -7,9 +7,21 @@ import { useT } from '@/components/LanguageProvider';
 
 const changelog = [
     {
-        version: 'v2.6.0',
+        version: 'v2.7.0',
         date: '2026-03-04',
         tag: 'latest',
+        changes: [
+            { type: 'feat', text: 'QR Identity Card — added responsive 3D tilt interaction to the card preview that fluidly tracks mouse movement using Framer Motion springs' },
+            { type: 'feat', text: 'QR Identity Card — added dynamic glossy glare overlay to the canvas that shifts relative to the mouse position for a physical card feel' },
+            { type: 'feat', text: 'QR Identity Card — added active theme ambient drop-shadow glow to the 3D card wrapper' },
+            { type: 'feat', text: 'QR Identity Card — Download PNG button now transforms into a checkmark icon to provide clear 2-second success feedback after clicking' },
+        ],
+    },
+    {
+        version: 'v2.6.0',
+        date: '2026-03-04',
+        tag: '',
+
         changes: [
             { type: 'feat', text: 'QR Identity Card — completely redesigned canvas card: double-ring avatar, radial spotlight, multi-ring decorative arcs, and "PHANTOM ENCRYPTED" accent pill badge' },
             { type: 'feat', text: 'QR card enlarged to 800×440 for higher resolution downloads; QR upgraded to error-correction level M for better scan reliability' },
