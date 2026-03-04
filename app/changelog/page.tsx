@@ -7,9 +7,21 @@ import { useT } from '@/components/LanguageProvider';
 
 const changelog = [
     {
-        version: 'v2.8.0',
+        version: 'v2.9.0',
         date: '2026-03-04',
         tag: 'latest',
+        changes: [
+            { type: 'feat', text: 'How It Works — replaced the static 3-step glass card with beautiful, separate 3D-tilt `StepCard`s featuring interactive glossy glare overlays' },
+            { type: 'feat', text: 'Image Handling — applied the same premium mouse-tracking 3D tilt and glare physics to the Advanced Image Handling cards' },
+            { type: 'feat', text: 'Secure Notes — radically improved the Note list sidebar with fluid slide-in/out Framer Motion layout animations' },
+            { type: 'feat', text: 'Secure Notes — added a vibrant spring-bounce animation to the lock icon when securing notes, complete with an ambient radial backdrop glow' },
+            { type: 'fix', text: 'QR Identity Card — ensured the modal layout is scrollable and does not break or overflow on very short mobile screens' },
+        ],
+    },
+    {
+        version: 'v2.8.0',
+        date: '2026-03-04',
+        tag: '',
         changes: [
             { type: 'feat', text: 'QR Identity Card — embedded a custom Phantom logo ("P") inside the generated QR code itself for stronger branding' },
             { type: 'feat', text: 'QR Identity Card — added dynamic "ISSUED: YYYY-MM-DD" timestamp metadata stamp to the canvas watermark area' },

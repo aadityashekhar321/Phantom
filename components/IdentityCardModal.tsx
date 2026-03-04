@@ -328,14 +328,14 @@ export function IdentityCardModal({ isOpen, onClose, ciphertext }: Props) {
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[200] flex justify-center items-start sm:items-center p-4 sm:p-6 overflow-y-auto">
                     {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                        className="fixed inset-0 bg-black/80 backdrop-blur-md"
                     />
 
                     {/* Modal panel */}
@@ -344,7 +344,7 @@ export function IdentityCardModal({ isOpen, onClose, ciphertext }: Props) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.93, y: 24 }}
                         transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                        className="relative w-full max-w-2xl bg-[#0b0b0e] border border-white/10 rounded-3xl overflow-hidden shadow-2xl shadow-black/60"
+                        className="relative w-full max-w-2xl bg-[#0b0b0e] border border-white/10 rounded-3xl overflow-hidden shadow-2xl shadow-black/60 my-8 sm:my-auto flex-shrink-0"
                     >
                         {/* Ambient top-glow */}
                         <div

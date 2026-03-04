@@ -141,24 +141,31 @@ export default function NotesPage() {
                     )}
 
                     {/* Note list */}
-                    {notes.map(note => (
-                        <div
-                            key={note.id}
-                            onClick={() => setActiveId(note.id)}
-                            className={`cursor-pointer p-3 rounded-2xl flex items-center justify-between gap-2 transition-all ${activeId === note.id ? 'bg-violet-500/15 border border-violet-500/30' : 'bg-black/30 border border-white/5 hover:bg-white/5'}`}
-                        >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                                {note.isLocked ? <Lock className="w-3.5 h-3.5 text-violet-400 flex-shrink-0" /> : <FileText className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />}
-                                <span className="text-sm font-medium text-white truncate">{note.title}</span>
-                            </div>
-                            <button
-                                onClick={e => { e.stopPropagation(); deleteNote(note.id); }}
-                                className="text-gray-600 hover:text-red-400 transition-colors p-1 rounded flex-shrink-0"
+                    <AnimatePresence initial={false}>
+                        {notes.map(note => (
+                            <motion.div
+                                layout
+                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                key={note.id}
+                                onClick={() => setActiveId(note.id)}
+                                className={`cursor-pointer p-3 rounded-2xl flex items-center justify-between gap-2 transition-colors ${activeId === note.id ? 'bg-violet-500/15 border border-violet-500/30' : 'bg-black/30 border border-white/5 hover:bg-white/5'}`}
                             >
-                                <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-                    ))}
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    {note.isLocked ? <Lock className="w-3.5 h-3.5 text-violet-400 flex-shrink-0" /> : <FileText className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />}
+                                    <span className="text-sm font-medium text-white truncate">{note.title}</span>
+                                </div>
+                                <button
+                                    onClick={e => { e.stopPropagation(); deleteNote(note.id); }}
+                                    className="text-gray-600 hover:text-red-400 transition-colors p-1 rounded flex-shrink-0"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
                 </div>
 
                 {/* Editor */}
@@ -174,10 +181,19 @@ export default function NotesPage() {
 
                         <AnimatePresence mode="wait">
                             {activeNote.isLocked ? (
-                                <motion.div key="locked" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col items-center justify-center text-center space-y-3 py-12">
-                                    <Lock className="w-12 h-12 text-violet-400/40" />
-                                    <p className="text-gray-500 text-sm">{t.notes.locked}</p>
-                                    <p className="text-gray-600 text-xs">{t.notes.lockedSub}</p>
+                                <motion.div key="locked" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col items-center justify-center text-center space-y-4 py-12 relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.1)_0%,transparent_60%)] pointer-events-none" />
+                                    <motion.div
+                                        initial={{ scale: 0.5, rotate: -20 }}
+                                        animate={{ scale: 1, rotate: 0 }}
+                                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                    >
+                                        <Lock className="w-14 h-14 text-violet-400 drop-shadow-[0_0_15px_rgba(167,139,250,0.5)] relative z-10" />
+                                    </motion.div>
+                                    <div className="space-y-1 relative z-10">
+                                        <p className="text-white font-medium">{t.notes.locked}</p>
+                                        <p className="text-gray-500 text-xs">{t.notes.lockedSub}</p>
+                                    </div>
                                 </motion.div>
                             ) : (
                                 <motion.textarea
