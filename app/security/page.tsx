@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Lock, Key, Shield, FileDigit, ServerOff, Cpu, ArrowRight, Users, Database, Briefcase, Github, CheckCircle } from 'lucide-react';
+import { useT } from '@/components/LanguageProvider';
 
 // ── Interactive Demo Component ────────────────────────────────────────────────
 const demoSteps = [
@@ -169,6 +170,7 @@ const pipelineSteps = [
 ];
 
 export default function SecurityInfo() {
+    const t = useT();
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
     // Count-up animation for the 100,000 iterations figure
@@ -219,9 +221,9 @@ export default function SecurityInfo() {
                         />
                     </div>
                 </div>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tighter text-red-400">Architecture &amp; Trust</h1>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tighter text-red-400">{t.security.title}</h1>
                 <p className="text-gray-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-                    The mathematics, design decisions, and security guarantees that make Phantom trustworthy by construction — not by promise.
+                    {t.security.subtitle}
                 </p>
             </div>
 
@@ -365,7 +367,7 @@ export default function SecurityInfo() {
                             <Shield className="w-6 h-6 text-orange-400" />
                             Privacy Threat Model
                         </h2>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                             {/* What it Protects */}
                             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-emerald-500/10">

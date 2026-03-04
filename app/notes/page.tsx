@@ -6,6 +6,7 @@ import { GlassCard } from '@/components/GlassCard';
 import { processCryptoAsync } from '@/lib/cryptoWorkerClient';
 import { Lock, Unlock, Trash2, Plus, Eye, EyeOff, FileText, Shield, Shuffle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useT } from '@/components/LanguageProvider';
 
 interface Note {
     id: string;
@@ -24,6 +25,7 @@ function generatePassword(): string {
 }
 
 export default function NotesPage() {
+    const t = useT();
     const [notes, setNotes] = useState<Note[]>([
         { id: '1', title: 'Welcome Note', content: 'This is your private, in-session encrypted notepad. Notes are stored only in memory and are permanently deleted when you close this tab.', isLocked: false, createdAt: new Date() }
     ]);
@@ -102,11 +104,11 @@ export default function NotesPage() {
             <div className="text-center mb-10 space-y-3">
                 <div className="inline-flex items-center gap-2 text-xs font-semibold text-violet-300 bg-violet-500/10 border border-violet-500/20 px-3 py-1.5 rounded-full">
                     <Shield className="w-3.5 h-3.5" />
-                    In-Memory Only · Cleared on Tab Close
+                    {t.notes.badge}
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Secure Notes</h1>
+                <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">{t.notes.title}</h1>
                 <p className="text-gray-400 max-w-lg mx-auto text-base">
-                    An encrypted, private notepad. Each note can be individually locked with its own password. Nothing is saved to disk.
+                    {t.notes.subtitle}
                 </p>
             </div>
 
@@ -121,12 +123,12 @@ export default function NotesPage() {
                                 value={newTitle}
                                 onChange={e => setNewTitle(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && addNote()}
-                                placeholder="Note title..."
+                                placeholder={t.notes.noteTitlePlaceholder}
                                 className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
                             />
                             <div className="flex gap-2">
-                                <button onClick={addNote} className="flex-1 text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded-xl py-1.5 transition-colors">Create</button>
-                                <button onClick={() => setShowNewForm(false)} className="text-xs text-gray-500 hover:text-white px-2 transition-colors">Cancel</button>
+                                <button onClick={addNote} className="flex-1 text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded-xl py-1.5 transition-colors">{t.notes.create}</button>
+                                <button onClick={() => setShowNewForm(false)} className="text-xs text-gray-500 hover:text-white px-2 transition-colors">{t.notes.cancel}</button>
                             </div>
                         </div>
                     ) : (
@@ -134,7 +136,7 @@ export default function NotesPage() {
                             onClick={() => setShowNewForm(true)}
                             className="w-full flex items-center gap-2 px-4 py-3 rounded-2xl border border-dashed border-white/10 text-gray-500 hover:text-white hover:border-violet-500/40 text-sm transition-all"
                         >
-                            <Plus className="w-4 h-4" /> New Note
+                            <Plus className="w-4 h-4" /> {t.notes.newNote}
                         </button>
                     )}
 
@@ -174,8 +176,8 @@ export default function NotesPage() {
                             {activeNote.isLocked ? (
                                 <motion.div key="locked" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex-1 flex flex-col items-center justify-center text-center space-y-3 py-12">
                                     <Lock className="w-12 h-12 text-violet-400/40" />
-                                    <p className="text-gray-500 text-sm">This note is locked with AES-256-GCM.</p>
-                                    <p className="text-gray-600 text-xs">Enter the password below to reveal its contents.</p>
+                                    <p className="text-gray-500 text-sm">{t.notes.locked}</p>
+                                    <p className="text-gray-600 text-xs">{t.notes.lockedSub}</p>
                                 </motion.div>
                             ) : (
                                 <motion.textarea
@@ -184,7 +186,7 @@ export default function NotesPage() {
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
                                     className="flex-1 min-h-[300px] bg-black/50 border border-white/5 rounded-2xl p-4 text-gray-200 text-sm leading-relaxed resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/40 custom-scrollbar"
-                                    placeholder="Start writing your secret note here..."
+                                    placeholder={t.notes.writePlaceholder}
                                     value={activeNote.content}
                                     onChange={e => updateContent(e.target.value)}
                                 />
@@ -193,14 +195,14 @@ export default function NotesPage() {
 
                         {/* Lock Controls */}
                         <div className="border-t border-white/5 pt-4 space-y-3">
-                            <label className="text-xs font-semibold text-violet-200">Note Password</label>
+                            <label className="text-xs font-semibold text-violet-200">{t.notes.notePassword}</label>
                             <div className="flex gap-2">
                                 <div className="relative flex-1">
                                     <input
                                         type={showPwd ? 'text' : 'password'}
                                         value={password}
                                         onChange={e => setPassword(e.target.value)}
-                                        placeholder="Password for this note..."
+                                        placeholder={t.notes.passwordPlaceholder}
                                         className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2.5 pr-20 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-violet-500/40 font-mono"
                                     />
                                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -217,14 +219,14 @@ export default function NotesPage() {
                                     disabled={loading || !password}
                                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold disabled:opacity-40 transition-colors"
                                 >
-                                    {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : activeNote.isLocked ? <><Unlock className="w-4 h-4" /> Unlock</> : <><Lock className="w-4 h-4" /> Lock</>}
+                                    {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : activeNote.isLocked ? <><Unlock className="w-4 h-4" /> {t.notes.unlock}</> : <><Lock className="w-4 h-4" /> {t.notes.lock}</>}
                                 </button>
                             </div>
                         </div>
                     </GlassCard>
                 ) : (
                     <div className="flex items-center justify-center min-h-[300px] border border-white/5 rounded-3xl text-gray-600 text-sm">
-                        Select or create a note to get started.
+                        {t.notes.selectNote}
                     </div>
                 )}
             </div>

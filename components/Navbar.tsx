@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Palette, Check, Settings } from 'lucide-react';
+import { Menu, X, Palette, Check, Settings, Languages } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useTheme } from '@/components/ThemeProvider';
+import { useLanguage, type Locale } from '@/components/LanguageProvider';
 
 type Theme = 'phantom' | 'crimson' | 'matrix';
 
@@ -16,21 +17,27 @@ const themes: { key: Theme; label: string; color: string; dot: string }[] = [
     { key: 'matrix', label: 'Matrix', color: 'hover:text-emerald-300', dot: 'bg-emerald-500' },
 ];
 
+const languageOptions: { key: Locale; label: string; nativeLabel: string }[] = [
+    { key: 'en', label: 'English', nativeLabel: 'EN' },
+    { key: 'hi', label: 'Hindi', nativeLabel: 'हिं' },
+];
+
 export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [showThemePicker, setShowThemePicker] = useState(false);
+    const [showLangPicker, setShowLangPicker] = useState(false);
     const pathname = usePathname();
     const { theme, setTheme } = useTheme();
+    const { locale, setLocale, t } = useLanguage();
 
-    // No need for overflow hack — handled by ThemeProvider scroll lock
     const toggleMenu = () => setIsOpen(!isOpen);
     const closeMenu = () => setIsOpen(false);
 
     const navLinks = [
-        { href: '/', label: 'The Vault' },
-        { href: '/notes', label: 'Secure Notes' },
-        { href: '/security', label: 'Architecture & Trust' },
-        { href: '/changelog', label: 'Changelog' },
+        { href: '/', label: t.nav.vault },
+        { href: '/notes', label: t.nav.notes },
+        { href: '/security', label: t.nav.security },
+        { href: '/changelog', label: t.nav.changelog },
     ];
 
     return (
@@ -59,10 +66,50 @@ export function Navbar() {
                             </Link>
                         ))}
 
+                        {/* Language Switcher */}
+                        <div className="relative">
+                            <button
+                                onClick={() => { setShowLangPicker(!showLangPicker); setShowThemePicker(false); }}
+                                className="flex items-center gap-1.5 p-2 text-gray-500 hover:text-white transition-colors rounded-xl hover:bg-white/5"
+                                title="Switch language"
+                                aria-label="Switch language"
+                            >
+                                <Languages className="w-4 h-4" />
+                                <span className="text-xs font-bold">{locale === 'en' ? 'EN' : 'हिं'}</span>
+                            </button>
+
+                            <AnimatePresence>
+                                {showLangPicker && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setShowLangPicker(false)} />
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute right-0 top-10 w-40 bg-[#0d0d10] border border-white/10 rounded-2xl p-2 shadow-2xl z-50"
+                                        >
+                                            {languageOptions.map(lang => (
+                                                <button
+                                                    key={lang.key}
+                                                    onClick={() => { setLocale(lang.key); setShowLangPicker(false); }}
+                                                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all ${locale === lang.key ? 'bg-white/5 text-white' : 'text-gray-400 hover:text-white'}`}
+                                                >
+                                                    <span className="text-base leading-none">{lang.key === 'hi' ? '🇮🇳' : '🇺🇸'}</span>
+                                                    <span>{lang.label}</span>
+                                                    {locale === lang.key && <Check className="w-3.5 h-3.5 ml-auto" />}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
                         {/* Theme Switcher */}
                         <div className="relative">
                             <button
-                                onClick={() => setShowThemePicker(!showThemePicker)}
+                                onClick={() => { setShowThemePicker(!showThemePicker); setShowLangPicker(false); }}
                                 className="p-2 text-gray-500 hover:text-white transition-colors rounded-xl hover:bg-white/5"
                                 title="Switch theme"
                                 aria-label="Switch color theme"
@@ -97,6 +144,7 @@ export function Navbar() {
                                 )}
                             </AnimatePresence>
                         </div>
+
                         {/* Settings button */}
                         <button
                             onClick={() => (window as Window & { _phantomToggleSettings?: () => void })._phantomToggleSettings?.()}
@@ -109,10 +157,45 @@ export function Navbar() {
 
                     {/* Mobile controls */}
                     <div className="flex items-center gap-2 md:hidden">
+                        {/* Mobile language picker */}
+                        <div className="relative">
+                            <button
+                                onClick={() => { setShowLangPicker(!showLangPicker); setShowThemePicker(false); }}
+                                className="p-2 text-gray-500 hover:text-white transition-colors"
+                                aria-label="Switch language"
+                            >
+                                <span className="text-xs font-bold">{locale === 'en' ? 'EN' : 'हिं'}</span>
+                            </button>
+                            <AnimatePresence>
+                                {showLangPicker && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setShowLangPicker(false)} />
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            className="absolute right-0 top-10 w-36 bg-[#0d0d10] border border-white/10 rounded-2xl p-2 shadow-2xl z-50"
+                                        >
+                                            {languageOptions.map(lang => (
+                                                <button
+                                                    key={lang.key}
+                                                    onClick={() => { setLocale(lang.key); setShowLangPicker(false); }}
+                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm ${locale === lang.key ? 'text-white bg-white/5' : 'text-gray-400'}`}
+                                                >
+                                                    <span>{lang.key === 'hi' ? '🇮🇳' : '🇺🇸'}</span>
+                                                    <span>{lang.label}</span>
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    </>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
                         {/* Mobile theme picker */}
                         <div className="relative">
                             <button
-                                onClick={() => setShowThemePicker(!showThemePicker)}
+                                onClick={() => { setShowThemePicker(!showThemePicker); setShowLangPicker(false); }}
                                 className="p-2 text-gray-500 hover:text-white transition-colors"
                                 aria-label="Switch theme"
                             >
@@ -128,14 +211,14 @@ export function Navbar() {
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             className="absolute right-0 top-10 w-36 bg-[#0d0d10] border border-white/10 rounded-2xl p-2 shadow-2xl z-50"
                                         >
-                                            {themes.map(t => (
+                                            {themes.map(thm => (
                                                 <button
-                                                    key={t.key}
-                                                    onClick={() => { setTheme(t.key); setShowThemePicker(false); }}
-                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm ${theme === t.key ? 'text-white bg-white/5' : 'text-gray-400'}`}
+                                                    key={thm.key}
+                                                    onClick={() => { setTheme(thm.key); setShowThemePicker(false); }}
+                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm ${theme === thm.key ? 'text-white bg-white/5' : 'text-gray-400'}`}
                                                 >
-                                                    <span className={`w-2 h-2 rounded-full ${t.dot}`} />
-                                                    {t.label}
+                                                    <span className={`w-2 h-2 rounded-full ${thm.dot}`} />
+                                                    {thm.label}
                                                 </button>
                                             ))}
                                         </motion.div>
@@ -143,6 +226,7 @@ export function Navbar() {
                                 )}
                             </AnimatePresence>
                         </div>
+
                         <button
                             onClick={toggleMenu}
                             className="p-2 text-gray-400 hover:text-white transition-colors z-50 relative focus:outline-none"

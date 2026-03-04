@@ -3,12 +3,23 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Clock, Tag, ArrowRight } from 'lucide-react';
+import { useT } from '@/components/LanguageProvider';
 
 const changelog = [
     {
-        version: 'v2.1.0',
+        version: 'v2.2.0',
         date: '2026-03-04',
         tag: 'latest',
+        changes: [
+            { type: 'feat', text: 'Multi-Language Support (L10n) — full English and Hindi translations across all pages, components, and UI labels' },
+            { type: 'feat', text: 'Language Switcher — added 🇺🇸 / 🇮🇳 language picker to desktop and mobile Navbar, persisted in sessionStorage' },
+            { type: 'feat', text: 'Translated Navbar, Footer, Notes, Security, Changelog, and How It Works pages with native Hindi strings' },
+        ],
+    },
+    {
+        version: 'v2.1.0',
+        date: '2026-03-04',
+        tag: '',
         changes: [
             { type: 'feat', text: 'Encrypted QR Identity Cards — generate and download beautiful, shareable profile cards containing your hidden encrypted message' },
             { type: 'feat', text: 'Dynamic Ambient Backgrounds — immersive floating gradient orbs for default themes, and performance-optimized Matrix Rain canvas for the Matrix theme' },
@@ -115,6 +126,7 @@ const tagColors: Record<string, string> = {
 };
 
 export default function ChangelogPage() {
+    const t = useT();
     return (
         <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -128,9 +140,9 @@ export default function ChangelogPage() {
                     <Clock className="w-3.5 h-3.5" />
                     Release Notes
                 </div>
-                <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-4">Changelog</h1>
+                <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-4">{t.changelog.title}</h1>
                 <p className="text-gray-400 text-base sm:text-lg max-w-lg mx-auto">
-                    A full record of everything that has been built, fixed, and improved in Phantom.
+                    {t.changelog.subtitle}
                 </p>
             </div>
 
@@ -188,7 +200,7 @@ export default function ChangelogPage() {
                     href="/"
                     className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 px-5 py-2.5 rounded-full transition-all"
                 >
-                    Open the Vault
+                    {t.nav.vault}
                     <ArrowRight className="w-4 h-4" />
                 </Link>
             </div>

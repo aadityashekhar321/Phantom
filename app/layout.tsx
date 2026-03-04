@@ -4,6 +4,7 @@ import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { LanguageProvider } from '@/components/LanguageProvider';
 import { SettingsProvider } from '@/components/SettingsProvider';
 import { AmbientBackground } from '@/components/AmbientBackground';
 import { OfflineBadge } from '@/components/OfflineBadge';
@@ -34,25 +35,27 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${outfit.variable} ${jetbrainsMono.variable} font-sans min-h-screen bg-black text-white selection:bg-indigo-500/50 overflow-x-hidden flex flex-col`}>
         <ThemeProvider>
-          <SettingsProvider>
-            {/* Dynamic Ambient Background (theme-aware) */}
-            <AmbientBackground />
+          <LanguageProvider>
+            <SettingsProvider>
+              {/* Dynamic Ambient Background (theme-aware) */}
+              <AmbientBackground />
 
-            <Navbar />
+              <Navbar />
 
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col pt-16 pb-32 items-center w-full px-4 sm:px-6">
-              <div className="max-w-5xl w-full">
-                {children}
-              </div>
-            </main>
+              {/* Main Content */}
+              <main className="flex-1 flex flex-col pt-16 pb-32 items-center w-full px-4 sm:px-6">
+                <div className="max-w-5xl w-full">
+                  {children}
+                </div>
+              </main>
 
-            <Footer />
+              <Footer />
 
-            <OfflineBadge />
-            <Toaster theme="dark" position="bottom-center" toastOptions={{ className: 'font-sans' }} />
-            <Analytics />
-          </SettingsProvider>
+              <OfflineBadge />
+              <Toaster theme="dark" position="bottom-center" toastOptions={{ className: 'font-sans' }} />
+              <Analytics />
+            </SettingsProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>
