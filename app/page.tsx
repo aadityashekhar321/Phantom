@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings } from '@/components/SettingsProvider';
 import { IdentityCardModal } from '@/components/IdentityCardModal';
+import { useT } from '@/components/LanguageProvider';
 
 
 // Heavy component lazy-loaded (only loaded when QR button is clicked)
@@ -23,6 +24,7 @@ const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeS
 });
 
 export default function Home() {
+  const t = useT();
   const [mode, setMode] = useState<'encode' | 'decode'>('encode');
   const [text, setText] = useState('');
   const [password, setPassword] = useState('');
@@ -742,11 +744,20 @@ export default function Home() {
       {/* Header section */}
       <div className="text-center space-y-4">
         <div className="flex justify-center mb-6 relative w-40 h-40 mx-auto">
-          {/* Static ambient ring — no infinite loop for performance */}
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-500 blur-2xl rounded-[3rem] opacity-20" />
-          <div className="relative z-10 w-full h-full">
-            <Image src="/hero.webp" alt="Phantom Hero Illustration" fill className="rounded-3xl drop-shadow-[0_0_30px_rgba(99,102,241,0.3)] object-cover" priority />
-          </div>
+          {/* Animated ambient glow */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-cyan-500 blur-2xl rounded-[3rem] opacity-20"
+            animate={{ opacity: [0.12, 0.28, 0.12], scale: [0.88, 1.1, 0.88] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          {/* Floating image */}
+          <motion.div
+            animate={{ y: [-6, 6, -6] }}
+            transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+            className="relative z-10 w-full h-full"
+          >
+            <Image src="/hero.webp" alt="Phantom Hero Illustration" fill className="rounded-3xl drop-shadow-[0_0_30px_rgba(99,102,241,0.35)] object-cover" priority />
+          </motion.div>
         </div>
         <h1 className="hero-title font-extrabold tracking-tight px-2" style={{ textAlign: 'center' }}>
           Military-Grade <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Encryption</span>
@@ -766,7 +777,7 @@ export default function Home() {
           className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/40 px-5 py-2.5 rounded-full transition-all mt-2 group"
         >
           <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-          Try a Live Demo
+          {t.vault.tryDemo}
         </button>
       </div>
 
@@ -785,14 +796,14 @@ export default function Home() {
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full z-10 font-semibold transition-colors ${mode === 'encode' ? 'text-white' : 'text-gray-400 hover:text-white'
                   }`}
               >
-                <Lock className="w-4 h-4" /> Lock
+                <Lock className="w-4 h-4" /> {t.vault.lockMode}
               </button>
               <button
                 onClick={() => { setMode('decode'); setOutput(''); }}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full z-10 font-semibold transition-colors ${mode === 'decode' ? 'text-white' : 'text-gray-400 hover:text-white'
                   }`}
               >
-                <Unlock className="w-4 h-4" /> Unlock
+                <Unlock className="w-4 h-4" /> {t.vault.unlockMode}
               </button>
             </div>
 
@@ -804,7 +815,7 @@ export default function Home() {
 
                 <div className="flex items-center justify-between mb-2 sm:mb-4 px-1 relative z-20">
                   <label className="text-sm font-semibold text-indigo-200">
-                    {mode === 'encode' ? (stagedImage ? 'Image Stager' : 'Data to Lock') : 'Data to Unlock'}
+                    {mode === 'encode' ? (stagedImage ? t.vault.imageStager : t.vault.dataToLock) : t.vault.dataToUnlock}
                   </label>
                   <div className="flex items-center gap-3">
                     {stagedImage && (
@@ -812,7 +823,7 @@ export default function Home() {
                         onClick={() => setStagedImage(null)}
                         className="text-xs font-semibold text-gray-400 hover:text-red-400 transition-colors"
                       >
-                        Clear Image
+                        {t.vault.clearImage}
                       </button>
                     )}
                     <input
@@ -827,7 +838,7 @@ export default function Home() {
                       title="Upload Image/File"
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      <span className="sm:hidden">Upload</span>
+                      <span className="sm:hidden">{t.vault.upload}</span>
                     </button>
                     {mode === 'decode' && (
                       <button
@@ -836,8 +847,8 @@ export default function Home() {
                         title="Scan QR Code"
                       >
                         <Camera className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Scan QR</span>
-                        <span className="sm:hidden">Scan</span>
+                        <span className="hidden sm:inline">{t.vault.scanQR}</span>
+                        <span className="sm:hidden">{t.vault.scan}</span>
                       </button>
                     )}
                   </div>
@@ -880,7 +891,7 @@ export default function Home() {
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
-                      placeholder={mode === 'decode' ? "Paste the locked message code or drop an image..." : ""}
+                      placeholder={mode === 'decode' ? t.vault.dataToUnlock : ""}
                       className={`w-full h-36 relative ${isDragging ? 'bg-indigo-500/10 border-indigo-400 scale-[1.02]' : 'bg-black/80 border-white/10'} border-2 border-dashed sm:border-solid sm:border rounded-2xl p-5 text-base sm:text-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] font-mono resize-none transition-all leading-relaxed backdrop-blur-md z-10`}
                     />
                   ) : (
@@ -910,7 +921,7 @@ export default function Home() {
                 {isDragging && !stagedImage && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-6">
                     <div className="bg-indigo-600 text-white font-bold px-4 py-2 rounded-full shadow-2xl drop-shadow-[0_0_15px_rgba(79,70,229,0.5)]">
-                      Drop into Vault
+                      {t.vault.dropIntoVault}
                     </div>
                   </div>
                 )}
@@ -924,7 +935,7 @@ export default function Home() {
                   className="mb-6 space-y-3 bg-black/40 border border-indigo-500/20 p-4 rounded-2xl relative overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
-                  <label className="text-sm font-semibold text-indigo-300 block">Select Processing Mode</label>
+                  <label className="text-sm font-semibold text-indigo-300 block">{t.vault.processMode}</label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-10">
                     <button
                       onClick={() => setImageMode('stego')}
@@ -979,8 +990,8 @@ export default function Home() {
                         <Sparkles className="w-4 h-4" />
                       </div>
                       <div className="text-left">
-                        <span className={`block font-bold text-sm ${isDuo ? 'text-amber-200' : 'text-gray-400'}`}>Deniable Vault (Decoy Mode)</span>
-                        <span className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">Hide a second message</span>
+                        <span className={`block font-bold text-sm ${isDuo ? 'text-amber-200' : 'text-gray-400'}`}>{t.vault.deniableVault}</span>
+                        <span className="text-[10px] text-gray-500 uppercase font-bold tracking-tighter">{t.vault.deniableVaultSub}</span>
                       </div>
                     </div>
                     <div className={`w-10 h-5 rounded-full relative transition-colors ${isDuo ? 'bg-amber-600' : 'bg-white/10'}`}>
@@ -1000,14 +1011,14 @@ export default function Home() {
                           <textarea
                             value={decoyText}
                             onChange={e => setDecoyText(e.target.value)}
-                            placeholder="Enter the DECOY message (this is shown if the decoy password is used)..."
+                            placeholder={t.vault.decoyPlaceholder}
                             className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-gray-300 placeholder-gray-700 focus:outline-none focus:border-amber-500/30 h-24 font-sans tracking-wide"
                           />
                           <input
                             type="password"
                             value={decoyPassword}
                             onChange={e => setDecoyPassword(e.target.value)}
-                            placeholder="Decoy Password..."
+                            placeholder={t.vault.decoyPasswordPlaceholder}
                             className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-700 focus:outline-none focus:border-amber-500/30 font-mono"
                           />
                           <p className="text-[10px] text-amber-500/60 leading-tight italic">NOTE: Provide this message and password to someone under pressure. Your MAIN secret remains safe.</p>
@@ -1022,14 +1033,14 @@ export default function Home() {
                 {/* Ambient Aura overlay for keystrokes */}
                 <div id="password-input-aura" className="absolute inset-0 rounded-2xl pointer-events-none z-20 opacity-0" />
 
-                <label className="text-sm font-semibold text-indigo-200 ml-1 block">Secret Key (Password)</label>
+                <label className="text-sm font-semibold text-indigo-200 ml-1 block">{t.vault.secretKey}</label>
                 <div className="relative">
                   <input
                     id="password-field"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={handlePasswordChange}
-                    placeholder="Enter a strong password..."
+                    placeholder={t.vault.passwordPlaceholder}
                     aria-label="Secret Key Password"
                     className="w-full relative z-10 bg-black/80 border border-white/10 rounded-2xl p-5 pr-20 text-base sm:text-lg text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] transition-all font-mono tracking-wider"
                   />
@@ -1073,15 +1084,15 @@ export default function Home() {
                             passwordStrength <= 80 ? 'text-emerald-400' :
                               'text-cyan-400'
                         }`}>
-                        {passwordStrength <= 20 ? 'Weak' :
-                          passwordStrength <= 40 ? 'Fair' :
-                            passwordStrength <= 60 ? 'Moderate' :
-                              passwordStrength <= 80 ? 'Strong' :
-                                'Very Strong'}
+                        {passwordStrength <= 20 ? t.vault.passwordWeak :
+                          passwordStrength <= 40 ? t.vault.passwordFair :
+                            passwordStrength <= 60 ? t.vault.passwordModerate :
+                              passwordStrength <= 80 ? t.vault.passwordStrong :
+                                t.vault.passwordVeryStrong}
                       </span>
                       <div className="flex items-center gap-3">
-                        <span className="text-[10px] text-indigo-400 font-mono tracking-tighter">{entropy} Bits Entropy</span>
-                        <span className="text-xs text-gray-600 font-mono">{password.length} chars</span>
+                        <span className="text-[10px] text-indigo-400 font-mono tracking-tighter">{entropy} {t.vault.bitsEntropy}</span>
+                        <span className="text-xs text-gray-600 font-mono">{password.length} {t.vault.chars}</span>
                       </div>
                     </div>
                   </>
@@ -1102,7 +1113,7 @@ export default function Home() {
                   ) : (
                     <>
                       {mode === 'encode' ? <Lock className="w-6 h-6" /> : <Unlock className="w-6 h-6" />}
-                      {mode === 'encode' ? 'Lock Now' : 'Unlock Now'}
+                      {mode === 'encode' ? t.vault.lockNow : t.vault.unlockNow}
                       <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                     </>
                   )}
@@ -1121,7 +1132,7 @@ export default function Home() {
               <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-2 select-none">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400/80 bg-emerald-400/10 px-2.5 py-1 rounded-full border border-emerald-400/20">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                  Local Process
+                  {t.vault.localProcess}
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-300/80 bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">
                   <ShieldCheck className="w-3.5 h-3.5" />
@@ -1154,7 +1165,7 @@ export default function Home() {
                   <div className="flex items-start sm:items-center justify-between px-5 py-4 border-b border-white/5 gap-2">
                     <div className="flex items-center gap-2">
                       <span className="text-xs sm:text-sm font-semibold text-indigo-300 tracking-widest uppercase">
-                        {mode === 'encode' ? 'Locked Secret Code' : 'Unlocked Message'}
+                        {mode === 'encode' ? t.vault.lockedCode : t.vault.unlockedMessage}
                       </span>
                       {destructCountdown !== null && (
                         <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 border border-red-500/30 rounded-xl text-[10px] sm:text-xs font-bold text-red-400 animate-pulse">
@@ -1197,7 +1208,7 @@ export default function Home() {
                       className="text-[10px] bg-black/60 border border-white/10 rounded-md text-gray-400 px-1.5 py-1.5 focus:outline-none"
                       title="Link expiry"
                     >
-                      <option value="none">∞ No expiry</option>
+                      <option value="none">{t.vault.noExpiry}</option>
                       <option value="1h">1h expiry</option>
                       <option value="24h">24h expiry</option>
                       <option value="7d">7d expiry</option>
@@ -1360,8 +1371,8 @@ export default function Home() {
               <Files className="w-4 h-4 text-violet-400" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Batch Encrypt</h2>
-              <p className="text-xs text-gray-500">Select multiple files — they&apos;ll all be bundled into one encrypted <code className="text-gray-400">.phantom</code> archive.</p>
+              <h2 className="text-base font-bold text-white">{t.vault.batchEncrypt}</h2>
+              <p className="text-xs text-gray-500">{t.vault.batchEncryptDesc}</p>
             </div>
           </div>
 
@@ -1398,7 +1409,7 @@ export default function Home() {
               type="password"
               value={batchPassword}
               onChange={e => setBatchPassword(e.target.value)}
-              placeholder="Batch password..."
+              placeholder={t.vault.batchPassword}
               className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-violet-500/40 font-mono"
             />
 
@@ -1431,7 +1442,7 @@ export default function Home() {
       <div className="w-full max-w-4xl pt-8 pb-4 px-4 overflow-hidden relative">
         <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-[#050510] to-transparent z-10 pointer-events-none" />
         <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-[#050510] to-transparent z-10 pointer-events-none" />
-        <p className="text-center text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-6">Engineered to Secure Any Payload</p>
+        <p className="text-center text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-6">{t.vault.engineeredFor}</p>
 
         <div className="flex animate-[marquee_20s_linear_infinite] w-max gap-8 md:gap-16 items-center flex-nowrap opacity-60 hover:opacity-100 transition-opacity">
           {/* Double the items to create a seamless infinite scroll effect */}
@@ -1472,13 +1483,13 @@ export default function Home() {
           transition={{ duration: 0.5 }}
           className="text-2xl sm:text-3xl font-bold text-center mb-10 text-white tracking-tight"
         >
-          How It Works
+          {t.vault.howItWorks}
         </motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { icon: <FileText className="w-7 h-7" />, title: '1. Write Your Secret', desc: 'Type your message, paste sensitive data, or drop a file. Phantom handles plain text, images, documents — anything you need to protect.', color: 'bg-indigo-500/20 text-indigo-400 shadow-indigo-500/10', rotate: 'rotate-3' },
-            { icon: <Key className="w-7 h-7" />, title: '2. Set Your Key', desc: 'Choose a strong, memorable password. This key never leaves your device — only you can unlock what you lock.', color: 'bg-violet-500/20 text-violet-400 shadow-violet-500/10', rotate: '-rotate-3' },
-            { icon: <Share2 className="w-7 h-7" />, title: '3. Share Safely', desc: 'Copy the ciphertext, export a .phantom vault file, generate a QR code, or share via a one-time secure link.', color: 'bg-cyan-500/20 text-cyan-400 shadow-cyan-500/10', rotate: 'rotate-3' },
+            { icon: <FileText className="w-7 h-7" />, title: t.vault.writeSecret, desc: t.vault.writeSecretDesc, color: 'bg-indigo-500/20 text-indigo-400 shadow-indigo-500/10', rotate: 'rotate-3' },
+            { icon: <Key className="w-7 h-7" />, title: t.vault.setKey, desc: t.vault.setKeyDesc, color: 'bg-violet-500/20 text-violet-400 shadow-violet-500/10', rotate: '-rotate-3' },
+            { icon: <Share2 className="w-7 h-7" />, title: t.vault.shareSecurely, desc: t.vault.shareSecurelyDesc, color: 'bg-cyan-500/20 text-cyan-400 shadow-cyan-500/10', rotate: 'rotate-3' },
           ].map((card, i) => (
             <motion.div
               key={card.title}
@@ -1502,10 +1513,10 @@ export default function Home() {
       <div className="text-center space-y-6 pt-16 sm:pt-20 px-4 w-full max-w-4xl">
         <h2 className="text-2xl sm:text-3xl font-bold text-white flex justify-center items-center gap-3 tracking-tight">
           <ImageIcon className="text-indigo-400 w-8 h-8" />
-          Advanced Image Handling
+          {t.vault.advancedImage}
         </h2>
         <p className="text-gray-400 text-base sm:text-lg max-w-2xl mx-auto">
-          Phantom features a powerful Dual Image Encryption Engine. When you upload an image to the Vault, you control exactly how it is secured.
+          {t.vault.advancedImageDesc}
         </p>
       </div>
 
@@ -1604,9 +1615,9 @@ export default function Home() {
                 <Camera className="w-6 h-6" />
               </div>
 
-              <h3 className="text-xl font-bold text-white tracking-tight mb-2 text-center">Live Scanner</h3>
+              <h3 className="text-xl font-bold text-white tracking-tight mb-2 text-center">{t.vault.liveScannerTitle}</h3>
               <p className="text-gray-400 text-sm leading-relaxed text-center mb-6">
-                Point your camera at a Phantom QR code to instantly load the encrypted payload.
+                {t.vault.liveScannerDesc}
               </p>
 
               <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-emerald-500/50 bg-black/50">
@@ -1657,9 +1668,9 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <h3 className="text-2xl font-bold text-white tracking-tight mb-2">Weaponize Image</h3>
+                  <h3 className="text-2xl font-bold text-white tracking-tight mb-2">{t.vault.weaponizeTitle}</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">
-                    Carrier image loaded successfully. What secret message or payload would you like to encrypt and hide inside its pixels?
+                    {t.vault.weaponizeDesc}
                   </p>
                 </div>
 
@@ -1667,7 +1678,7 @@ export default function Home() {
                   <textarea
                     value={stegoPayload}
                     onChange={(e) => setStegoPayload(e.target.value)}
-                    placeholder="Enter top-secret payload..."
+                    placeholder={t.vault.topSecretPayload}
                     className="w-full h-32 bg-black/80 border border-white/10 rounded-2xl p-4 text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-[inset_0_2px_15px_rgba(0,0,0,0.8)] font-mono resize-none transition-all leading-relaxed"
                   />
 
@@ -1705,7 +1716,7 @@ export default function Home() {
             >
               <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-6" />
 
-              <h3 className="text-lg font-bold text-white mb-6">Actions</h3>
+              <h3 className="text-lg font-bold text-white mb-6">{t.vault.actions}</h3>
 
               <div className="flex flex-col gap-3">
                 <button

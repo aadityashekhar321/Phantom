@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Clock, Zap } from 'lucide-react';
+import { useT } from '@/components/LanguageProvider';
 
 interface SettingsContextType {
     selfDestructEnabled: boolean;
@@ -52,6 +53,7 @@ export function useSettings() {
 
 function SettingsModal() {
     const { showSettings, setShowSettings, selfDestructEnabled, setSelfDestructEnabled, selfDestructDuration, setSelfDestructDuration } = useSettings();
+    const t = useT();
 
     return (
         <AnimatePresence>
@@ -76,7 +78,7 @@ function SettingsModal() {
                                     <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                                         <Zap className="w-5 h-5" />
                                     </div>
-                                    <h2 className="text-xl font-bold text-white tracking-tight">Global Settings</h2>
+                                    <h2 className="text-xl font-bold text-white tracking-tight">{t.settings.title}</h2>
                                 </div>
                                 <button
                                     onClick={() => setShowSettings(false)}
@@ -93,8 +95,8 @@ function SettingsModal() {
                                         <div className="flex items-center gap-3">
                                             <Clock className="w-5 h-5 text-indigo-400" />
                                             <div>
-                                                <h3 className="font-bold text-white text-sm">Self-Destruct Timer</h3>
-                                                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mt-0.5">Burn After Reading</p>
+                                                <h3 className="font-bold text-white text-sm">{t.settings.selfDestruct}</h3>
+                                                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mt-0.5">{t.settings.burnAfterReading}</p>
                                             </div>
                                         </div>
                                         <button
@@ -111,7 +113,7 @@ function SettingsModal() {
                                             animate={{ opacity: 1, height: 'auto' }}
                                             className="pt-2 space-y-3"
                                         >
-                                            <p className="text-xs text-gray-400">Automatically clear decrypted output after:</p>
+                                            <p className="text-xs text-gray-400">{t.settings.selfDestructDesc}</p>
                                             <div className="flex gap-2">
                                                 {[30, 60].map(sec => (
                                                     <button
@@ -129,13 +131,13 @@ function SettingsModal() {
 
                                 {/* Placeholder for other settings */}
                                 <div className="p-4 rounded-2xl border border-dashed border-white/5 flex items-center justify-center">
-                                    <p className="text-[10px] text-gray-600 font-mono tracking-tighter">More security parameters coming soon...</p>
+                                    <p className="text-[10px] text-gray-600 font-mono tracking-tighter">{t.settings.comingSoon}</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="bg-indigo-500/5 p-4 text-center border-t border-white/5">
-                            <p className="text-[10px] text-indigo-400/60 font-medium">Settings are stored in-memory for this session.</p>
+                            <p className="text-[10px] text-indigo-400/60 font-medium">{t.settings.sessionNote}</p>
                         </div>
                     </motion.div>
                 </div>
