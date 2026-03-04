@@ -366,7 +366,7 @@ export default function HowItWorks() {
                                 initial={{ opacity: 0, y: 16 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={vp}
-                                transition={{ duration: 0.4, delay: row.delay, ease: [0.22, 1, 0.36, 1] }}
+                                transition={{ duration: 0.4, delay: row.delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
                                 whileHover={{ scale: 1.02 }}
                             >
                                 <p className={`font-bold text-base ${row.color}`}>{row.mode}</p>

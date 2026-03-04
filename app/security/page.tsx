@@ -21,7 +21,7 @@ const fadeUp = {
     visible: (delay: number = 0) => ({
         opacity: 1,
         y: 0,
-        transition: { duration: 0.52, ease: [0.22, 1, 0.36, 1], delay },
+        transition: { duration: 0.52, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay },
     }),
 };
 
@@ -178,10 +178,10 @@ const faqs = [
 // ─── Pipeline steps ──────────────────────────────────────────────────────────
 
 const pipelineSteps = [
-    { icon: FileDigit, label: 'Raw Data',     sub: 'Text or Image',      color: 'bg-white/5 border-white/10 text-gray-400',         tooltip: 'The original unprotected data' },
-    { icon: Key,       label: 'PBKDF2',       sub: '100,000 Iterations', color: 'bg-red-500/20 border-red-500/30 text-red-400',      tooltip: 'Derives a master key via 100k hashes' },
-    { icon: Shield,    label: 'AES-256-GCM',  sub: 'Military Grade',     color: 'bg-rose-500/20 border-rose-500/30 text-rose-400',   tooltip: 'Scrambles data with authenticated math' },
-    { icon: Lock,      label: 'Ciphertext',   sub: 'Secure Payload',     color: 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400', tooltip: 'The fully locked, unreadable output' },
+    { icon: FileDigit, label: 'Raw Data', sub: 'Text or Image', color: 'bg-white/5 border-white/10 text-gray-400', tooltip: 'The original unprotected data' },
+    { icon: Key, label: 'PBKDF2', sub: '100,000 Iterations', color: 'bg-red-500/20 border-red-500/30 text-red-400', tooltip: 'Derives a master key via 100k hashes' },
+    { icon: Shield, label: 'AES-256-GCM', sub: 'Military Grade', color: 'bg-rose-500/20 border-rose-500/30 text-rose-400', tooltip: 'Scrambles data with authenticated math' },
+    { icon: Lock, label: 'Ciphertext', sub: 'Secure Payload', color: 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400', tooltip: 'The fully locked, unreadable output' },
 ];
 
 // ─── Section wrapper — scroll reveal ────────────────────────────────────────
@@ -279,7 +279,7 @@ export default function SecurityInfo() {
                                 <div className="space-y-4">
                                     {[
                                         { label: 'Metadata Stored', value: 'Absolutely Zero' },
-                                        { label: 'User Identity',   value: '100% Anonymous' },
+                                        { label: 'User Identity', value: '100% Anonymous' },
                                         { label: 'Data Persistence', value: 'Volatile (In-Memory)' },
                                         { label: 'Steganography Support', value: 'Yes (LSB & QR)' },
                                     ].map((row, i, arr) => (
@@ -304,7 +304,7 @@ export default function SecurityInfo() {
                                 <div className="space-y-4">
                                     {[
                                         { label: 'Metadata Stored', value: 'Logs & Timestamps' },
-                                        { label: 'User Identity',   value: 'Linked to Phone #' },
+                                        { label: 'User Identity', value: 'Linked to Phone #' },
                                         { label: 'Data Persistence', value: 'Saved on Servers' },
                                         { label: 'Steganography Support', value: 'No' },
                                     ].map((row, i, arr) => (
@@ -345,9 +345,9 @@ export default function SecurityInfo() {
                             <h2 className="text-xl sm:text-2xl font-bold text-white mb-6 border-b border-white/10 pb-6">Built For Absolute Privacy</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 {[
-                                    { icon: Users,    iconBg: 'bg-indigo-500/20', iconText: 'text-indigo-400', glow: 'rgba(99,102,241,0.18)',  border: 'rgba(99,102,241,0.35)',  title: 'Journalists',      desc: 'Protecting anonymous sources and transmitting sensitive data without digital footprints.' },
-                                    { icon: Database, iconBg: 'bg-emerald-500/20', iconText: 'text-emerald-400', glow: 'rgba(52,211,153,0.15)', border: 'rgba(52,211,153,0.30)',  title: 'Personal Archival', desc: 'Encrypting crypto seed phrases or private passwords offline before cloud storage.' },
-                                    { icon: Briefcase, iconBg: 'bg-amber-500/20',  iconText: 'text-amber-400',  glow: 'rgba(251,191,36,0.15)',  border: 'rgba(251,191,36,0.30)',  title: 'IP Protection',    desc: 'Sharing proprietary code, trade secrets, or unreleased assets with business partners.' },
+                                    { icon: Users, iconBg: 'bg-indigo-500/20', iconText: 'text-indigo-400', glow: 'rgba(99,102,241,0.18)', border: 'rgba(99,102,241,0.35)', title: 'Journalists', desc: 'Protecting anonymous sources and transmitting sensitive data without digital footprints.' },
+                                    { icon: Database, iconBg: 'bg-emerald-500/20', iconText: 'text-emerald-400', glow: 'rgba(52,211,153,0.15)', border: 'rgba(52,211,153,0.30)', title: 'Personal Archival', desc: 'Encrypting crypto seed phrases or private passwords offline before cloud storage.' },
+                                    { icon: Briefcase, iconBg: 'bg-amber-500/20', iconText: 'text-amber-400', glow: 'rgba(251,191,36,0.15)', border: 'rgba(251,191,36,0.30)', title: 'IP Protection', desc: 'Sharing proprietary code, trade secrets, or unreleased assets with business partners.' },
                                 ].map(({ icon: Icon, iconBg, iconText, glow, border, title, desc }, i) => (
                                     <motion.div
                                         key={title}
@@ -415,7 +415,7 @@ export default function SecurityInfo() {
                                                 initial={{ opacity: 0, y: 16 }}
                                                 whileInView={{ opacity: 1, y: 0 }}
                                                 viewport={VP}
-                                                transition={{ duration: 0.4, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
+                                                transition={{ duration: 0.4, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
                                             >
                                                 {/* Desktop tooltip */}
                                                 <div className="absolute -top-12 left-1/2 -translate-x-1/2 hidden sm:block opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-50 pointer-events-none">
@@ -477,10 +477,10 @@ export default function SecurityInfo() {
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {[
-                                { label: 'Brute-force search space', value: '2²⁵⁶', sub: '≈ 1.16 × 10⁷⁷ possible keys',        note: 'More than the number of atoms in the observable universe.', color: 'text-indigo-300' },
-                                { label: 'GPU guesses per second',   value: '~10¹³', sub: 'PBKDF2 reduces GPU throughput to ~10⁵', note: 'Each guess requires 100,000 hash iterations.',               color: 'text-violet-300' },
-                                { label: 'Time to brute-force',      value: '≫ 10⁵⁴ years', sub: 'Universe age: 1.38 × 10¹⁰ years',  note: 'Even with all the energy in the universe.',             color: 'text-cyan-300'   },
-                                { label: 'Authentication guarantee',  value: 'GCM Tag', sub: '128-bit authentication tag per message', note: 'Tampered ciphertext is detected before decryption.',     color: 'text-emerald-300' },
+                                { label: 'Brute-force search space', value: '2²⁵⁶', sub: '≈ 1.16 × 10⁷⁷ possible keys', note: 'More than the number of atoms in the observable universe.', color: 'text-indigo-300' },
+                                { label: 'GPU guesses per second', value: '~10¹³', sub: 'PBKDF2 reduces GPU throughput to ~10⁵', note: 'Each guess requires 100,000 hash iterations.', color: 'text-violet-300' },
+                                { label: 'Time to brute-force', value: '≫ 10⁵⁴ years', sub: 'Universe age: 1.38 × 10¹⁰ years', note: 'Even with all the energy in the universe.', color: 'text-cyan-300' },
+                                { label: 'Authentication guarantee', value: 'GCM Tag', sub: '128-bit authentication tag per message', note: 'Tampered ciphertext is detected before decryption.', color: 'text-emerald-300' },
                             ].map((item, i) => (
                                 <motion.div
                                     key={item.label}
@@ -542,7 +542,7 @@ export default function SecurityInfo() {
                                 <div className="space-y-3">
                                     {[
                                         { title: 'ISP / Network Snooping', sub: 'Traffic is encrypted locally. Network sees only random noise.' },
-                                        { title: 'Cloud Storage Hacks',    sub: 'Stolen Ciphertext means nothing without your Secret Key.' },
+                                        { title: 'Cloud Storage Hacks', sub: 'Stolen Ciphertext means nothing without your Secret Key.' },
                                     ].map(item => (
                                         <motion.div
                                             key={item.title}
@@ -612,7 +612,7 @@ export default function SecurityInfo() {
                                         <span className="font-semibold text-gray-200 pr-4">{faq.question}</span>
                                         <motion.span
                                             animate={{ rotate: openFaq === idx ? 180 : 0 }}
-                                            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                                            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
                                             className="flex-shrink-0"
                                         >
                                             <ChevronDown className="w-5 h-5 text-gray-400" />
@@ -625,7 +625,7 @@ export default function SecurityInfo() {
                                                 initial={{ height: 0, opacity: 0 }}
                                                 animate={{ height: 'auto', opacity: 1 }}
                                                 exit={{ height: 0, opacity: 0 }}
-                                                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                                                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
                                                 className="overflow-hidden"
                                             >
                                                 <p className="px-5 pb-5 text-gray-400 text-sm leading-relaxed">{faq.answer}</p>
