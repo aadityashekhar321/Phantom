@@ -29,7 +29,7 @@ export function OfflineBadge() {
 
     return (
         <div
-            className={`fixed bottom-[5.5rem] sm:bottom-6 left-4 sm:left-6 z-[80] flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md border transition-all duration-500 select-none ${online
+            className={`fixed bottom-3 right-3 sm:bottom-6 sm:right-auto sm:left-6 z-[80] flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest backdrop-blur-md border transition-all duration-500 select-none ${online
                 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                 : 'bg-red-500/10 border-red-500/20 text-red-400'
                 }`}
