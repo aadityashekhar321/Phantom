@@ -132,32 +132,48 @@ function InteractiveDemoSteps() {
 
 const faqs = [
     {
-        question: "Can Phantom recover my password?",
-        answer: "No — by design. Phantom is a zero-knowledge stateless client. No servers, no databases, no password reset. Your Secret Key holds the only mathematical path to your data. Lose the key and the ciphertext remains permanently locked. This is not a limitation — it is the entire point."
+        question: "Can Phantom recover my password if I forget it?",
+        answer: "No — by design. Phantom is a zero-knowledge, stateless client. There are no servers, no databases, and no password-reset mechanism. Your Secret Key is the only mathematical path to your ciphertext. If you lose it, the data remains permanently and irreversibly locked. This is not a limitation — it is the security guarantee."
     },
     {
         question: "Does Phantom track me or log my usage?",
-        answer: "Never. Phantom uses zero analytics, zero cookies, zero IP logging, and zero telemetry. Once the static page loads, no outbound network requests are made. There is nothing to track because nothing is transmitted."
+        answer: "Never. Phantom uses zero analytics, zero cookies, zero IP logging, and zero telemetry of any kind. Once the static page loads into your browser, no further outbound network requests are made. The app has no backend to send data to — there is nothing to track because nothing is transmitted."
     },
     {
-        question: "Are my files uploaded to a server for encryption?",
-        answer: "No. Every cryptographic operation runs entirely inside your browser's RAM using the native Web Crypto API. Your data never crosses the network boundary. Not even a single byte. You can verify this by disconnecting from the internet and using Phantom — it works identically."
+        question: "Are my files or messages uploaded to a server for encryption?",
+        answer: "No. Every cryptographic operation — key derivation, encryption, decryption — runs entirely inside your browser's RAM using the native Web Crypto API. Your plaintext never crosses the network boundary. You can verify this yourself: open Phantom, disconnect from the internet, and use it normally. It is identical."
     },
     {
-        question: "Why does my Steganography image fail to decode?",
-        answer: "Platforms like WhatsApp, Twitter/X, Discord, and iMessage aggressively re-compress and re-encode images to reduce file size. This process permanently destroys the LSB pixel data where your hidden message is stored. Always share steganography carrier images as Files (not photos) via platforms that preserve binary losslessly: Signal, Telegram (with 'Send as File'), or direct email attachments."
+        question: "What makes AES-256-GCM better than other encryption modes?",
+        answer: "AES-256-GCM is an Authenticated Encryption with Associated Data (AEAD) cipher. Unlike AES-CBC, it simultaneously encrypts and authenticates the ciphertext using a 128-bit GCM authentication tag. This means any single-bit tampering of the ciphertext — by an attacker or file corruption — is detected mathematically before decryption even begins. You get both confidentiality and integrity in one cryptographic operation."
+    },
+    {
+        question: "Why does Phantom use 100,000 PBKDF2 iterations?",
+        answer: "PBKDF2 forces each password-guess attempt to repeat the same 100,000 SHA-256 hash computations. A modern GPU that could try 10¹³ raw SHA-256 guesses per second is reduced to roughly 10⁸ effective guesses per second after PBKDF2. Combined with the 2²⁵⁶ AES key space, this makes brute-force attacks computationally infeasible even against nation-state adversaries with GPU clusters."
+    },
+    {
+        question: "Why does my Steganography image fail to decode on other platforms?",
+        answer: "Platforms like WhatsApp, Twitter/X, Discord, and iMessage aggressively re-compress and re-encode images to reduce file sizes. This permanently destroys the LSB (Least Significant Bit) pixel data where the hidden message is stored. Always share steganography carrier images as raw Files — not photos — using platforms that preserve binary data losslessly: Signal ('Send as File'), Telegram ('Send as File'), or direct email attachments."
+    },
+    {
+        question: "Is my encrypted data safe if Phantom's servers go down?",
+        answer: "Yes, completely. Phantom has no servers. The application is a static client-side website. Your encrypted output is a self-contained string or .phantom file you hold locally. Even if the Phantom website ceased to exist tomorrow, the Web Crypto API used to decrypt your data is built into every modern browser — permanently and natively. You can decrypt your data with any browser, forever."
+    },
+    {
+        question: "What is the difference between the Vault and Steganography tools?",
+        answer: "The Vault tool encrypts plaintext or files into opaque ciphertext — the output is unreadable and obviously protected. Steganography hides a message inside an innocent-looking carrier image at the pixel level, so that no one looking at the image can tell a secret is present. For maximum security, combine both: encrypt your message in the Vault, then hide the ciphertext inside an image using Steganography. An attacker would need to detect the hidden channel and then break AES-256-GCM."
     },
     {
         question: "How do I install Phantom as an offline app?",
-        answer: "Phantom is a Progressive Web App (PWA). On iOS, open it in Safari → tap 'Share' → 'Add to Home Screen'. On Android, open it in Chrome → tap the menu → 'Add to Home Screen'. On Desktop Chrome or Edge, click the install icon in the address bar. Once installed, Phantom works 100% offline — no network connection required."
+        answer: "Phantom is a Progressive Web App (PWA). On iOS: open in Safari → tap 'Share' → 'Add to Home Screen'. On Android: open in Chrome → menu → 'Add to Home Screen'. On Desktop Chrome or Edge: click the install icon in the address bar. Once installed, Phantom works 100% offline — no internet connection is ever required for cryptographic operations."
     },
     {
         question: "What is a .phantom Vault file?",
-        answer: "A .phantom file is a self-contained encrypted bundle. When you lock data, you can export everything (ciphertext, IV, and salt metadata) into a single .phantom file for offline storage on a USB drive, hard disk, or secure archive. To decrypt, drag the .phantom file back into the Vault and provide the password."
+        answer: "A .phantom file is a self-contained encrypted bundle produced by the Vault tool. It packages the ciphertext, IV (Initialization Vector), and salt metadata into a single portable file you can store on a USB drive, encrypted hard disk, or offline archive. To decrypt, drag the .phantom file back into the Vault and provide the original password. The file format is open and inspectable."
     },
     {
         question: "Is Phantom open source? Can I audit the code?",
-        answer: "Yes. Phantom is fully open source on GitHub. You can read every line of the cryptographic logic, verify no network calls are made, and confirm the security model for yourself. Trust shouldn't be assumed — it should be verified."
+        answer: "Yes. Phantom is fully open source on GitHub. You can read every line of cryptographic logic, verify that no network requests are made, inspect the key derivation parameters, and confirm the entire security model independently. Trust should never be assumed — it should be verified. The GitHub link is at the bottom of this page."
     }
 ];
 
@@ -236,9 +252,11 @@ export default function SecurityInfo() {
                 </p>
             </div>
 
+
             <GlassCard className="max-w-3xl mx-auto px-5 py-8 sm:px-10 sm:py-12">
                 <div className="flex flex-col gap-12 sm:gap-16">
-                    {/* ── Why Phantom? Comparison ── */}
+
+                    {/* ── 1. Why Phantom? Comparison ── */}
                     <div className="space-y-8 sm:space-y-10">
                         <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
                             <Shield className="w-6 h-6 text-indigo-400" />
@@ -266,7 +284,7 @@ export default function SecurityInfo() {
                                     </div>
                                     <div className="flex items-center justify-between pt-1">
                                         <span className="text-sm text-gray-400">Steganography Support</span>
-                                        <span className="text-sm font-bold text-emerald-400">Yes (LSB & QR)</span>
+                                        <span className="text-sm font-bold text-emerald-400">Yes (LSB &amp; QR)</span>
                                     </div>
                                 </div>
                             </div>
@@ -280,7 +298,7 @@ export default function SecurityInfo() {
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between border-b border-white/5 pb-3">
                                         <span className="text-sm text-gray-500">Metadata Stored</span>
-                                        <span className="text-sm font-bold text-red-400">Logs & Timestamps</span>
+                                        <span className="text-sm font-bold text-red-400">Logs &amp; Timestamps</span>
                                     </div>
                                     <div className="flex items-center justify-between border-b border-white/5 pb-3">
                                         <span className="text-sm text-gray-500">User Identity</span>
@@ -299,8 +317,53 @@ export default function SecurityInfo() {
                         </div>
                     </div>
 
-                    {/* Technical Specs */}
-                    <div className="space-y-8 sm:space-y-10">
+                    {/* ── 2. The Phantom Mission + Use Cases ── */}
+                    <div className="space-y-8 sm:space-y-10 pt-4 border-t border-white/10">
+                        <div className="flex flex-col items-center text-center pb-4 pt-4">
+                            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-lg shadow-indigo-500/20 flex flex-col items-center justify-center">
+                                <span className="text-white font-bold text-xl leading-none">P</span>
+                                <span className="text-[10px] font-bold opacity-60 text-white mt-1 uppercase tracking-widest">v1.0</span>
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">The Phantom Mission</h2>
+                            <p className="text-gray-300 text-lg font-medium leading-relaxed max-w-2xl">
+                                We believe that total privacy shouldn&apos;t require a computer science degree.
+                            </p>
+                            <p className="text-gray-400 text-base leading-relaxed mt-4 max-w-2xl mx-auto">
+                                Phantom was built to give anyone the ability to send messages that are mathematically impossible to intercept.
+                                Privacy is a fundamental human right. We don&apos;t ask for data, don&apos;t show ads, and never see your messages.
+                            </p>
+                        </div>
+
+                        <div>
+                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-6 border-b border-white/10 pb-6">Built For Absolute Privacy</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/5 space-y-2 hover:border-white/10 transition-colors">
+                                    <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400">
+                                        <Users className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="text-base font-bold text-white">Journalists</h3>
+                                    <p className="text-sm text-gray-400 leading-relaxed">Protecting anonymous sources and transmitting sensitive data without digital footprints.</p>
+                                </div>
+                                <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/5 space-y-2 hover:border-white/10 transition-colors">
+                                    <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
+                                        <Database className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="text-base font-bold text-white">Personal Archival</h3>
+                                    <p className="text-sm text-gray-400 leading-relaxed">Encrypting crypto seed phrases or private passwords offline before cloud storage.</p>
+                                </div>
+                                <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/5 space-y-2 hover:border-white/10 transition-colors">
+                                    <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-400">
+                                        <Briefcase className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="text-base font-bold text-white">IP Protection</h3>
+                                    <p className="text-sm text-gray-400 leading-relaxed">Sharing proprietary code, trade secrets, or unreleased assets with business partners.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── 3. Technical Specifications ── */}
+                    <div className="space-y-8 sm:space-y-10 border-t border-white/10 pt-4">
                         <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 text-white">Technical Specifications</h2>
                         <ul className="list-disc list-inside space-y-5 sm:space-y-6 text-gray-300 text-base leading-relaxed">
                             <li><strong>Algorithm:</strong> AES-256 in GCM (Galois/Counter Mode) — authenticated encryption that simultaneously provides confidentiality and tamper-detection.</li>
@@ -317,7 +380,7 @@ export default function SecurityInfo() {
                         </ul>
                     </div>
 
-                    {/* Cryptographic Pipeline — rewritten for performance */}
+                    {/* ── 4. Cryptographic Pipeline ── */}
                     <div className="space-y-8 sm:space-y-10">
                         <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
                             <Cpu className="w-6 h-6 text-red-400" />
@@ -329,9 +392,7 @@ export default function SecurityInfo() {
                                     const Icon = step.icon;
                                     return (
                                         <>
-                                            {/* Step card — tooltip removed on mobile, shown only on desktop via group-hover */}
                                             <div key={step.label} className="group flex flex-col items-center text-center space-y-2 w-full sm:w-auto relative">
-                                                {/* Desktop-only tooltip (hidden on mobile via sm:block) */}
                                                 <div className="absolute -top-12 left-1/2 -translate-x-1/2 hidden sm:block opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-50 pointer-events-none">
                                                     <div className="bg-black/90 border border-white/20 text-xs text-gray-300 px-3 py-1.5 rounded-lg whitespace-nowrap">
                                                         {step.tooltip}
@@ -350,110 +411,23 @@ export default function SecurityInfo() {
                                     );
                                 })}
                             </div>
-                            {/* Mobile: simple linear label instead of arrows */}
                             <p className="text-center text-xs text-gray-600 mt-5 sm:hidden">Raw Data → PBKDF2 → AES-256-GCM → Ciphertext</p>
                         </div>
                     </div>
 
-                    {/* Warnings */}
-                    <div className="space-y-8 sm:space-y-10">
-                        <h2 className="text-xl sm:text-2xl font-bold text-red-300 border-b border-white/10 pb-6">Important Warnings</h2>
-                        <div className="bg-red-500/10 border border-red-500/20 p-6 sm:p-10 rounded-3xl space-y-6">
-                            <p className="text-red-200 text-base leading-relaxed">
-                                <strong>1. Lost passwords cannot be recovered.</strong><br />
-                                Phantom is zero-knowledge locally executing software. There is no backend password reset feature.
-                            </p>
-                            <p className="text-red-200 text-base leading-relaxed">
-                                <strong>2. No browser storage.</strong><br />
-                                Everything is stored temporarily in RAM. The keys and plaintexts are cleared when the session closes.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Threat Model */}
-                    <div className="space-y-8 sm:space-y-10 pt-4">
+                    {/* ── 5. Interactive Security Demo ── */}
+                    <div className="space-y-6 pt-4 border-t border-white/10">
                         <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
-                            <Shield className="w-6 h-6 text-orange-400" />
-                            Privacy Threat Model
+                            <Cpu className="w-6 h-6 text-red-400" />
+                            Interactive Security Demo
                         </h2>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            {/* What it Protects */}
-                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-emerald-500/10">
-                                <h3 className="text-lg font-bold text-emerald-400 flex items-center gap-2">
-                                    <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                    What Phantom Protects
-                                </h3>
-                                <div className="space-y-3">
-                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
-                                        <p className="text-sm font-bold text-emerald-300">ISP / Network Snooping</p>
-                                        <p className="text-xs text-emerald-400/70 mt-1">Traffic is encrypted locally. Network sees only random noise.</p>
-                                    </div>
-                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
-                                        <p className="text-sm font-bold text-emerald-300">Cloud Storage Hacks</p>
-                                        <p className="text-xs text-emerald-400/70 mt-1">Stolen Ciphertext means nothing without your Secret Key.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* What it Doesn't */}
-                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-orange-500/10">
-                                <h3 className="text-lg font-bold text-orange-400 flex items-center gap-2">
-                                    <ServerOff className="w-5 h-5 text-orange-500" />
-                                    What It Cannot Protect
-                                </h3>
-                                <div className="space-y-3">
-                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
-                                        <p className="text-sm font-bold text-orange-300 mb-1">Local OS Keyloggers</p>
-                                        <span className="text-[10px] uppercase font-bold tracking-widest bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full inline-block mb-1">Hardware Level</span>
-                                        <p className="text-xs text-orange-400/70">Browser software cannot stop OS-level keyloggers.</p>
-                                    </div>
-                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
-                                        <p className="text-sm font-bold text-orange-300 mb-1">Physical Coercion</p>
-                                        <span className="text-[10px] uppercase font-bold tracking-widest bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full inline-block mb-1">Mitigated by Decoy Mode</span>
-                                        <p className="text-xs text-orange-400/70">Someone looking over your shoulder. Use Self-Destruct to minimize exposure window.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <p className="text-gray-400 text-sm leading-relaxed">
+                            Step through the AES-256-GCM pipeline to see exactly how your message is transformed.
+                        </p>
+                        <InteractiveDemoSteps />
                     </div>
 
-                    {/* FAQ Section */}
-                    <div className="space-y-8 sm:space-y-10 pt-4">
-                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
-                            <ServerOff className="w-6 h-6 text-gray-400" />
-                            Zero-Knowledge FAQ
-                        </h2>
-                        <div className="space-y-3">
-                            {faqs.map((faq, idx) => (
-                                <div key={idx} className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden">
-                                    <button
-                                        onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                                        className="w-full flex items-center justify-between p-5 text-left focus:outline-none active:bg-white/[0.04]"
-                                    >
-                                        <span className="font-semibold text-gray-200 pr-4">{faq.question}</span>
-                                        <ChevronDown className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform duration-300 ${openFaq === idx ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    <AnimatePresence initial={false}>
-                                        {openFaq === idx && (
-                                            <motion.div
-                                                key="answer"
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: 'auto', opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                transition={{ duration: 0.25 }}
-                                                className="overflow-hidden"
-                                            >
-                                                <p className="px-5 pb-5 text-gray-400 text-sm leading-relaxed">{faq.answer}</p>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* ── Verified by Math ─────────────────────────────── */}
+                    {/* ── 6. Verified by Math ── */}
                     <div className="space-y-6 pt-4 border-t border-white/10 mt-4">
                         <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
                             <Shield className="w-6 h-6 text-indigo-400" />
@@ -503,74 +477,116 @@ export default function SecurityInfo() {
                         </div>
                     </div>
 
-                    {/* ── Interactive Security Demo ─────────────────────── */}
-                    <div className="space-y-6 pt-4 border-t border-white/10">
+                    {/* ── 7. Important Warnings ── */}
+                    <div className="space-y-8 sm:space-y-10 border-t border-white/10 pt-4">
+                        <h2 className="text-xl sm:text-2xl font-bold text-red-300 border-b border-white/10 pb-6">Important Warnings</h2>
+                        <div className="bg-red-500/10 border border-red-500/20 p-6 sm:p-10 rounded-3xl space-y-6">
+                            <p className="text-red-200 text-base leading-relaxed">
+                                <strong>1. Lost passwords cannot be recovered.</strong><br />
+                                Phantom is zero-knowledge locally executing software. There is no backend password reset feature.
+                            </p>
+                            <p className="text-red-200 text-base leading-relaxed">
+                                <strong>2. No browser storage.</strong><br />
+                                Everything is stored temporarily in RAM. The keys and plaintexts are cleared when the session closes.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* ── 8. Privacy Threat Model ── */}
+                    <div className="space-y-8 sm:space-y-10 pt-4">
                         <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
-                            <Cpu className="w-6 h-6 text-red-400" />
-                            Interactive Security Demo
+                            <Shield className="w-6 h-6 text-orange-400" />
+                            Privacy Threat Model
                         </h2>
-                        <p className="text-gray-400 text-sm leading-relaxed">
-                            Step through the AES-256-GCM pipeline to see exactly how your message is transformed.
-                        </p>
-                        <InteractiveDemoSteps />
-                    </div>
 
-                    {/* Merged Mission & Use Cases */}
-                    <div className="space-y-8 sm:space-y-10 pt-4 border-t border-white/10 mt-10">
-                        <div className="flex flex-col items-center text-center pb-4 pt-4">
-                            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-lg shadow-indigo-500/20 flex flex-col items-center justify-center">
-                                <span className="text-white font-bold text-xl leading-none">P</span>
-                                <span className="text-[10px] font-bold opacity-60 text-white mt-1 uppercase tracking-widest">v1.0</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            {/* What it Protects */}
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-emerald-500/10">
+                                <h3 className="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                                    <CheckCircle className="w-5 h-5 text-emerald-500" />
+                                    What Phantom Protects
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                                        <p className="text-sm font-bold text-emerald-300">ISP / Network Snooping</p>
+                                        <p className="text-xs text-emerald-400/70 mt-1">Traffic is encrypted locally. Network sees only random noise.</p>
+                                    </div>
+                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                                        <p className="text-sm font-bold text-emerald-300">Cloud Storage Hacks</p>
+                                        <p className="text-xs text-emerald-400/70 mt-1">Stolen Ciphertext means nothing without your Secret Key.</p>
+                                    </div>
+                                </div>
                             </div>
-                            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">The Phantom Mission</h2>
-                            <p className="text-gray-300 text-lg font-medium leading-relaxed max-w-2xl">
-                                We believe that total privacy shouldn&apos;t require a computer science degree.
-                            </p>
-                            <p className="text-gray-400 text-base leading-relaxed mt-4 max-w-2xl mx-auto">
-                                Phantom was built to give anyone the ability to send messages that are mathematically impossible to intercept.
-                                Privacy is a fundamental human right. We don&apos;t ask for data, don&apos;t show ads, and never see your messages.
-                            </p>
-                        </div>
 
-                        <div>
-                            <h2 className="text-xl sm:text-2xl font-bold text-white mb-6 border-b border-white/10 pb-6">Built For Absolute Privacy</h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/5 space-y-2 hover:border-white/10 transition-colors">
-                                    <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400">
-                                        <Users className="w-5 h-5" />
+                            {/* What it Doesn't */}
+                            <div className="bg-orange-500/10 border border-orange-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-orange-500/10">
+                                <h3 className="text-lg font-bold text-orange-400 flex items-center gap-2">
+                                    <ServerOff className="w-5 h-5 text-orange-500" />
+                                    What It Cannot Protect
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                                        <p className="text-sm font-bold text-orange-300 mb-1">Local OS Keyloggers</p>
+                                        <span className="text-[10px] uppercase font-bold tracking-widest bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full inline-block mb-1">Hardware Level</span>
+                                        <p className="text-xs text-orange-400/70">Browser software cannot stop OS-level keyloggers.</p>
                                     </div>
-                                    <h3 className="text-base font-bold text-white">Journalists</h3>
-                                    <p className="text-sm text-gray-400 leading-relaxed">Protecting anonymous sources and transmitting sensitive data without digital footprints.</p>
-                                </div>
-                                <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/5 space-y-2 hover:border-white/10 transition-colors">
-                                    <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400">
-                                        <Database className="w-5 h-5" />
+                                    <div className="bg-black/40 p-3 rounded-xl border border-white/5">
+                                        <p className="text-sm font-bold text-orange-300 mb-1">Physical Coercion</p>
+                                        <span className="text-[10px] uppercase font-bold tracking-widest bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full inline-block mb-1">Mitigated by Decoy Mode</span>
+                                        <p className="text-xs text-orange-400/70">Someone looking over your shoulder. Use Self-Destruct to minimize exposure window.</p>
                                     </div>
-                                    <h3 className="text-base font-bold text-white">Personal Archival</h3>
-                                    <p className="text-sm text-gray-400 leading-relaxed">Encrypting crypto seed phrases or private passwords offline before cloud storage.</p>
-                                </div>
-                                <div className="bg-white/[0.02] p-5 rounded-2xl border border-white/5 space-y-2 hover:border-white/10 transition-colors">
-                                    <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-400">
-                                        <Briefcase className="w-5 h-5" />
-                                    </div>
-                                    <h3 className="text-base font-bold text-white">IP Protection</h3>
-                                    <p className="text-sm text-gray-400 leading-relaxed">Sharing proprietary code, trade secrets, or unreleased assets with business partners.</p>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Open Source Action */}
-                        <div className="pt-6 border-t border-white/10 text-center">
-                            <a
-                                href="https://github.com/aadityashekhar321/Phantom"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors font-medium text-gray-300 hover:text-white"
-                            >
-                                <Github className="w-5 h-5" /> View Open Source Engine on GitHub
-                            </a>
+                    {/* ── 9. Zero-Knowledge FAQ ── */}
+                    <div className="space-y-8 sm:space-y-10 pt-4 border-t border-white/10">
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
+                            <ServerOff className="w-6 h-6 text-gray-400" />
+                            Zero-Knowledge FAQ
+                        </h2>
+                        <div className="space-y-3">
+                            {faqs.map((faq, idx) => (
+                                <div key={idx} className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden">
+                                    <button
+                                        onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                                        className="w-full flex items-center justify-between p-5 text-left focus:outline-none active:bg-white/[0.04]"
+                                    >
+                                        <span className="font-semibold text-gray-200 pr-4">{faq.question}</span>
+                                        <ChevronDown className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform duration-300 ${openFaq === idx ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    <AnimatePresence initial={false}>
+                                        {openFaq === idx && (
+                                            <motion.div
+                                                key="answer"
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.25 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <p className="px-5 pb-5 text-gray-400 text-sm leading-relaxed">{faq.answer}</p>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            ))}
                         </div>
                     </div>
+
+                    {/* ── 10. GitHub CTA ── */}
+                    <div className="pt-6 border-t border-white/10 text-center">
+                        <a
+                            href="https://github.com/aadityashekhar321/Phantom"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors font-medium text-gray-300 hover:text-white"
+                        >
+                            <Github className="w-5 h-5" /> View Open Source Engine on GitHub
+                        </a>
+                    </div>
+
                 </div>
             </GlassCard>
         </motion.div>

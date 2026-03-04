@@ -7,15 +7,26 @@ import { useT } from '@/components/LanguageProvider';
 
 const changelog = [
     {
-        version: 'v2.2.0',
+        version: 'v2.3.0',
         date: '2026-03-04',
         tag: 'latest',
+        changes: [
+            { type: 'refactor', text: 'Architecture & Trust page — reordered all 10 sections into a logical Why → Mission → Use Cases → Technical Specs → Pipeline → Interactive Demo → Verified by Math → Warnings → Threat Model → FAQ flow' },
+            { type: 'feat', text: 'Zero-Knowledge FAQ expanded from 7 to 11 entries with new questions: AES-256-GCM vs other modes, PBKDF2 iteration rationale, Vault vs Steganography comparison, and server-outage resilience' },
+            { type: 'docs', text: 'FAQ answers rewritten for greater technical precision — including AEAD explanation, GPU throughput reduction, and LSB platform compatibility details' },
+        ],
+    },
+    {
+        version: 'v2.2.0',
+        date: '2026-03-04',
+        tag: '',
         changes: [
             { type: 'feat', text: 'Multi-Language Support (L10n) — full English and Hindi translations across all pages, components, and UI labels' },
             { type: 'feat', text: 'Language Switcher — added 🇺🇸 / 🇮🇳 language picker to desktop and mobile Navbar, persisted in sessionStorage' },
             { type: 'feat', text: 'Translated Navbar, Footer, Notes, Security, Changelog, and How It Works pages with native Hindi strings' },
         ],
     },
+
     {
         version: 'v2.1.0',
         date: '2026-03-04',
