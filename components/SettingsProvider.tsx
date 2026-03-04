@@ -5,6 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Clock, Zap } from 'lucide-react';
 import { useT } from '@/components/LanguageProvider';
 
+// localStorage keys
+const LS_KEY_ENABLED = 'phantom_selfDestruct_enabled';
+const LS_KEY_DURATION = 'phantom_selfDestruct_duration';
+
 interface SettingsContextType {
     selfDestructEnabled: boolean;
     setSelfDestructEnabled: (val: boolean) => void;
@@ -17,9 +21,35 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
-    const [selfDestructEnabled, setSelfDestructEnabled] = useState(false);
-    const [selfDestructDuration, setSelfDestructDuration] = useState(30);
+    // Initialise from localStorage (falls back to defaults during SSR)
+    const [selfDestructEnabled, _setSelfDestructEnabled] = useState(false);
+    const [selfDestructDuration, _setSelfDestructDuration] = useState(30);
     const [showSettings, setShowSettings] = useState(false);
+    const [hydrated, setHydrated] = useState(false);
+
+    // Hydrate on mount (client-only)
+    useEffect(() => {
+        try {
+            const storedEnabled = localStorage.getItem(LS_KEY_ENABLED);
+            const storedDuration = localStorage.getItem(LS_KEY_DURATION);
+            if (storedEnabled !== null) _setSelfDestructEnabled(storedEnabled === 'true');
+            if (storedDuration !== null) _setSelfDestructDuration(Number(storedDuration));
+        } catch {
+            // localStorage unavailable (private browsing, etc.) — silently ignore
+        }
+        setHydrated(true);
+    }, []);
+
+    // Persist whenever the value changes (skip initial render to avoid double-write)
+    const setSelfDestructEnabled = (val: boolean) => {
+        _setSelfDestructEnabled(val);
+        try { localStorage.setItem(LS_KEY_ENABLED, String(val)); } catch { /* ignore */ }
+    };
+
+    const setSelfDestructDuration = (val: number) => {
+        _setSelfDestructDuration(val);
+        try { localStorage.setItem(LS_KEY_DURATION, String(val)); } catch { /* ignore */ }
+    };
 
     // Expose toggle to window for Navbar access (shortcut)
     useEffect(() => {
@@ -29,6 +59,22 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             delete (window as PhantomWindow)._phantomToggleSettings;
         };
     }, []);
+
+    // Avoid rendering the modal before hydration to prevent mismatch
+    if (!hydrated) {
+        return (
+            <SettingsContext.Provider value={{
+                selfDestructEnabled,
+                setSelfDestructEnabled,
+                selfDestructDuration,
+                setSelfDestructDuration,
+                showSettings,
+                setShowSettings
+            }}>
+                {children}
+            </SettingsContext.Provider>
+        );
+    }
 
     return (
         <SettingsContext.Provider value={{
@@ -102,6 +148,7 @@ function SettingsModal() {
                                         <button
                                             onClick={() => setSelfDestructEnabled(!selfDestructEnabled)}
                                             className={`w-12 h-6 rounded-full transition-all relative ${selfDestructEnabled ? 'bg-indigo-600' : 'bg-white/10'}`}
+                                            aria-label="Toggle Self-Destruct Timer"
                                         >
                                             <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${selfDestructEnabled ? 'left-7' : 'left-1'}`} />
                                         </button>
@@ -121,7 +168,7 @@ function SettingsModal() {
                                                         onClick={() => setSelfDestructDuration(sec)}
                                                         className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${selfDestructDuration === sec ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' : 'bg-black/40 border-white/5 text-gray-500'}`}
                                                     >
-                                                        {sec} Seconds
+                                                        {sec} {t.settings.seconds}
                                                     </button>
                                                 ))}
                                             </div>

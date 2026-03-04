@@ -10,6 +10,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
 [![Framer Motion](https://img.shields.io/badge/Framer_Motion-11-ff69b4?logo=framer)](https://www.framer.com/motion/)
+[![PWA](https://img.shields.io/badge/PWA-Offline_Ready-5a0ef7?logo=pwa)](https://web.dev/progressive-web-apps/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Deploy with Vercel](https://img.shields.io/badge/Deploy_on-Vercel-black?logo=vercel)](https://vercel.com)
 
@@ -31,12 +32,18 @@
 | 🖼️ **Full Image Encryption** | Encrypt an entire image file into impenetrable ciphertext. Restore it perfectly with the correct key. |
 | 📱 **PWA — Works Offline** | Installable Progressive Web App. Download once, use forever with no internet connection required. |
 | 📷 **Live QR Code Scanner** | Use your camera to scan a Phantom QR code and instantly load the encrypted payload. |
-| 🔗 **Secure Link Sharing** | Generate a shareable URL that embeds the encrypted payload directly in the hash fragment. |
+| 🔗 **Secure Link Sharing** | Generate a shareable URL that embeds the encrypted payload directly in the hash fragment — with optional expiry. |
 | 🗄️ **`.phantom` Vault Files** | Export encrypted payloads as self-contained `.phantom` files. Drag and drop to restore. |
+| 🗂️ **Batch File Encryption** | Upload multiple files at once and bundle them into a single encrypted `.phantom` archive. |
 | 💣 **Panic Wipe** | One click instantly clears all inputs, outputs, passwords, and staged data from memory. |
+| ⏱️ **Self-Destruct Timer** | Automatically wipe decrypted output after 30 or 60 seconds. Setting persists across page reloads. |
+| 🎭 **Deniable (Decoy) Vault** | Embed a convincing decoy message alongside your real secret, each unlocked by a different password. |
+| 📝 **Secure Notes** | In-memory encrypted notepad — notes are individually password-locked and cleared when the tab closes. |
+| 🌐 **Multi-Language (i18n)** | Full English and Hindi UI support with seamless, real-time language switching across all pages. |
+| 🆔 **QR Identity Cards** | Generate a scannable encrypted identity card from your ciphertext, ready to print or share. |
 | 🌐 **Zero-Knowledge** | No backend. No database. No telemetry. Cryptographic operations happen exclusively in the browser. |
 | 🎨 **Glassmorphism UI** | Premium dark glassmorphism interface with Framer Motion micro-animations and responsive design. |
-| ♿ **Accessible** | Full keyboard navigation, `aria-label` attributes, `Ctrl+Enter` shortcut, and screen-reader consideration. |
+| ♿ **Accessible** | Full keyboard navigation, `aria-label` attributes, `Ctrl+Enter` shortcut, and screen-reader support. |
 
 ---
 
@@ -59,7 +66,7 @@ Your Message   ─────────────────────�
 2. **Authenticated Encryption** — GCM mode provides both confidentiality and data integrity. Tampered ciphertext will always fail to decrypt.
 3. **Perfect Forward Secrecy per Message** — A fresh random IV and Salt are generated for every single encryption operation.
 4. **Zero Network Requests** — Once the page loads, Phantom makes no outbound HTTP requests of any kind.
-5. **No `localStorage`** — All state lives only in active JavaScript memory. Close the tab and it's gone.
+5. **Minimal, Purpose-Bound `localStorage`** — Only non-sensitive UI preferences (Self-Destruct timer toggle and duration) are persisted. All message content, passwords, and cryptographic material exist only in active JavaScript memory and are cleared on tab close or Panic Wipe.
 
 ---
 
@@ -73,17 +80,26 @@ Your Message   ─────────────────────�
 
 ### Steganography Mode
 1. Drop an **image** (PNG or JPG) into the Vault.
-2. Choose **Steganography** mode.
+2. Choose **Steganography** mode → select **Invisible (LSB)** or **QR Overlay**.
 3. Type the secret payload and enter your password.
 4. Phantom encrypts the payload, then weaves the ciphertext byte-by-byte into the **least-significant bits (LSBs)** of the image's pixel data.
 5. The resulting image is downloaded and is **visually identical** to the original — but contains your hidden secret.
 6. To recover: drag the carrier image back into Phantom and enter the password.
+
+> **LSB vs QR Overlay:** LSB mode is invisible but fragile to re-compression (e.g., WhatsApp photo mode). QR Overlay embeds a visible QR code directly into the image and survives WhatsApp/Telegram photo compression.
 
 ### Full Image Encryption
 1. Drop an image into the Vault.
 2. Choose **Full Encryption** mode.
 3. Phantom reads the raw binary of the image, converts it to Base64, then encrypts the entire thing with AES-256-GCM.
 4. The output is a ciphertext `.phantom` vault file containing the encrypted image binary.
+
+### Deniable (Decoy) Vault
+Enable **Deniable Vault** mode to encode two layered messages into a single ciphertext:
+- **Main password** → reveals your real secret.
+- **Decoy password** → reveals a convincing but harmless fake message.
+
+This provides plausible deniability under compulsion.
 
 ---
 
@@ -97,11 +113,13 @@ Your Message   ─────────────────────�
 | **Animations** | Framer Motion 11 |
 | **Cryptography** | Web Crypto API (`AES-GCM`, `PBKDF2`, `SHA-256`) |
 | **Image Processing** | HTML5 Canvas API |
+| **Steganography** | Custom LSB engine (`lib/stego.ts`) |
 | **QR Codes** | `qrcode.react` + `jsQR` (camera scanning) |
 | **Fonts** | Google Fonts — Outfit + JetBrains Mono |
 | **Icons** | Lucide React |
 | **PWA** | Custom Service Worker + Web App Manifest |
 | **Toasts** | Sonner |
+| **i18n** | Custom `LanguageProvider` context with JSON locale files |
 | **Deployment** | Vercel (free Hobby tier) |
 
 ---
@@ -147,7 +165,7 @@ Phantom is a **static-capable application** that requires zero paid infrastructu
 
 ### Self-Hosting
 
-Since Phantom makes no network requests after load, you can host it on any static file server, CDN, or even locally by opening the `out/` directory after running `next export`.
+Since Phantom makes no network requests after load, you can host it on any static file server or CDN by running `npm run build` and serving the `.next/` output.
 
 ---
 
@@ -156,25 +174,37 @@ Since Phantom makes no network requests after load, you can host it on any stati
 ```
 Phantom/
 ├── app/
-│   ├── page.tsx              # Home — The Vault (Encode/Decode UI)
-│   ├── security/page.tsx     # Architecture & Trust page
-│   ├── layout.tsx            # Root layout (Navbar, Footer, fonts)
-│   └── globals.css           # Global styles and custom scrollbar
+│   ├── page.tsx                # Home — The Vault (Encode/Decode UI)
+│   ├── notes/page.tsx          # Secure encrypted notepad
+│   ├── security/page.tsx       # Architecture & Trust page
+│   ├── how-it-works/page.tsx   # Step-by-step explainer
+│   ├── changelog/page.tsx      # Full release history
+│   ├── layout.tsx              # Root layout (Navbar, Footer, fonts)
+│   └── globals.css             # Global styles and custom scrollbar
 ├── components/
-│   ├── Navbar.tsx            # Responsive navigation bar
-│   ├── Footer.tsx            # Site footer with trust signals
-│   ├── GlassCard.tsx         # Glassmorphism card wrapper
-│   └── MagneticButton.tsx    # Magnetic hover effect button
+│   ├── Navbar.tsx              # Responsive fixed navigation bar
+│   ├── Footer.tsx              # Site footer with trust signals
+│   ├── GlassCard.tsx           # Glassmorphism card wrapper
+│   ├── MagneticButton.tsx      # Magnetic hover effect button
+│   ├── SettingsProvider.tsx    # Global settings context (Self-Destruct, etc.)
+│   ├── LanguageProvider.tsx    # i18n context (EN / HI)
+│   ├── HistoryPanel.tsx        # Session encode/decode history drawer
+│   ├── IdentityCardModal.tsx   # QR identity card generator
+│   └── OfflineBadge.tsx        # PWA offline status indicator
 ├── lib/
-│   ├── crypto.ts             # AES-256-GCM / PBKDF2 core logic
-│   ├── cryptoWorkerClient.ts # Web Worker wrapper for async crypto
-│   ├── stego.ts              # LSB Steganography engine
-│   └── worker.ts             # Dedicated Web Worker thread
+│   ├── crypto.ts               # AES-256-GCM / PBKDF2 core logic
+│   ├── cryptoWorkerClient.ts   # Web Worker wrapper for async crypto
+│   ├── stego.ts                # LSB Steganography engine
+│   └── worker.ts               # Dedicated Web Worker thread
+├── locales/
+│   ├── en.json                 # English translations
+│   └── hi.json                 # Hindi translations
 └── public/
-    ├── logo.png              # App logo
-    ├── hero.webp             # Hero illustration
-    ├── manifest.json         # PWA manifest
-    └── sw.js                 # Service Worker (offline support)
+    ├── logo.png                # App logo
+    ├── hero.webp               # Hero illustration
+    ├── security.webp           # Security page illustration
+    ├── manifest.json           # PWA manifest
+    └── sw.js                   # Service Worker (offline support)
 ```
 
 ---
@@ -187,14 +217,26 @@ Phantom/
 
 ---
 
+## 📋 Changelog Highlights
+
+| Version | Highlights |
+|---|---|
+| **v2.3.0** | Persistent Self-Destruct Timer (localStorage), hero image animation, complete Hindi i18n |
+| **v2.2.0** | Multi-Language Support — English & Hindi across all pages and components |
+| **v2.1.0** | QR Identity Cards, Deniable Vault (Decoy Mode), Offline Badge |
+| **v2.0.0** | Secure Notes, Self-Destruct Timer, Batch File Encryption |
+| **v1.5.0** | PWA support, Service Worker, offline mode |
+| **v1.0.0** | Initial release — AES-256 encryption, steganography, QR codes |
+
+For the full history, see the [**Changelog page →**](https://phantom-aadityashekhar321.vercel.app/changelog)
+
+---
+
 ## 🔮 Future Improvements
 
-The following enhancements are under consideration for future versions:
-
-- **WebLLM Integration** — Use [WebLLM](https://webllm.mlc.ai/) or [Transformers.js](https://huggingface.co/docs/transformers.js/index) running entirely via WebGPU to perform local AI-based obfuscation (e.g., hiding ciphertext inside a convincing fictional story) without any server calls.
-- **Biometric Unlock** — Use the WebAuthn API as a second-factor authentication layer.
-- **Password-Protected Vault Exports** — Encrypt `.phantom` files with an additional layer bound to a device-specific key.
-- **History Panel** — In-memory only (cleared on tab close) list of recent encode/decode operations for the current session.
+- **WebLLM Integration** — Local AI obfuscation (hide ciphertext inside a convincing fictional story) via WebGPU — zero server calls.
+- **Biometric Unlock** — WebAuthn API as a second-factor authentication layer.
+- **Additional Languages** — The i18n architecture is already in place; adding new locales requires only a new JSON file.
 - **Drag-to-Reorder Output Actions** — Let users customise which output actions appear first.
 
 ---
