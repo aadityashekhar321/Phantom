@@ -7,9 +7,27 @@ import { useT } from '@/components/LanguageProvider';
 
 const changelog = [
     {
-        version: 'v2.5.0',
+        version: 'v2.6.0',
         date: '2026-03-04',
         tag: 'latest',
+        changes: [
+            { type: 'feat', text: 'QR Identity Card — completely redesigned canvas card: double-ring avatar, radial spotlight, multi-ring decorative arcs, and "PHANTOM ENCRYPTED" accent pill badge' },
+            { type: 'feat', text: 'QR card enlarged to 800×440 for higher resolution downloads; QR upgraded to error-correction level M for better scan reliability' },
+            { type: 'feat', text: 'Theme system expanded from 5 to 7 presets (added Abyss Blue, Obsidian); each theme now propagates its accent color to modal header, preview border, focus rings, download button gradient, and swatch glow' },
+            { type: 'feat', text: 'Animated theme swatches with Framer Motion layoutId dot; Prev/Next chevron buttons for keyboard-style theme cycling' },
+            { type: 'feat', text: 'Active theme name animates in beside swatches on change' },
+            { type: 'feat', text: 'Input fields: live character counters, @ prefix on Handle, themed focus-border highlight matching active theme accent' },
+            { type: 'feat', text: 'Copy-to-Clipboard button using Clipboard API (image/png); shows animated checkmark on success' },
+            { type: 'feat', text: 'Rendering spinner overlay appears while canvas is generating; prevents stale-frame flash' },
+            { type: 'feat', text: 'Download button uses active theme gradient instead of static indigo' },
+            { type: 'feat', text: 'Top header glow line adapts to the active theme accent color' },
+        ],
+    },
+    {
+        version: 'v2.5.0',
+        date: '2026-03-04',
+        tag: '',
+
         changes: [
             { type: 'feat', text: 'Architecture & Trust — all 10 sections now scroll-reveal with a reusable Section wrapper using Framer Motion whileInView' },
             { type: 'feat', text: 'Comparison cards (Phantom vs Signal/WhatsApp) lift and glow on hover with themed box-shadows' },

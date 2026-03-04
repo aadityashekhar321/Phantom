@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Download, CreditCard, RefreshCw } from 'lucide-react';
+import { X, Download, CreditCard, ChevronLeft, ChevronRight, Copy, Check } from 'lucide-react';
 
 interface Props {
     isOpen: boolean;
@@ -10,156 +10,229 @@ interface Props {
     ciphertext: string;
 }
 
-const GRADIENT_PRESETS = [
-    ['#312e81', '#4f46e5', '#7c3aed'],   // Phantom (indigo-violet)
-    ['#1a1a2e', '#16213e', '#0f3460'],   // Midnight blue
-    ['#065f46', '#047857', '#0d9488'],   // Cipher green
-    ['#7f1d1d', '#991b1b', '#b91c1c'],   // Crimson
-    ['#1e1b4b', '#3730a3', '#6d28d9'],   // Deep violet
-];
+// ─── Theme palette — (bg-dark, mid, accent, border-tint, name) ───────────────
+const THEMES = [
+    { stops: ['#1e1635', '#312e81', '#4f46e5'], accent: '#818cf8', name: 'Phantom' },
+    { stops: ['#0d1117', '#161b22', '#1f6feb'], accent: '#60a5fa', name: 'Midnight' },
+    { stops: ['#052e16', '#065f46', '#047857'], accent: '#34d399', name: 'Cipher Green' },
+    { stops: ['#450a0a', '#7f1d1d', '#b91c1c'], accent: '#f87171', name: 'Crimson' },
+    { stops: ['#0f0524', '#2d1d69', '#7c3aed'], accent: '#c084fc', name: 'Deep Violet' },
+    { stops: ['#082f49', '#0c4a6e', '#0369a1'], accent: '#38bdf8', name: 'Abyss Blue' },
+    { stops: ['#1c1917', '#292524', '#57534e'], accent: '#d4c4a8', name: 'Obsidian' },
+] as const;
+
+// ─── Canvas renderer ─────────────────────────────────────────────────────────
+
+async function renderCard(
+    canvas: HTMLCanvasElement,
+    { name, handle, themeIdx, ciphertext }: {
+        name: string; handle: string; themeIdx: number; ciphertext: string;
+    }
+) {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const W = 800, H = 440;
+    canvas.width = W;
+    canvas.height = H;
+
+    const theme = THEMES[themeIdx];
+    const [c1, c2, c3] = theme.stops;
+
+    // ── Background gradient ──
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, c1);
+    bg.addColorStop(0.55, c2);
+    bg.addColorStop(1, c3);
+    ctx.fillStyle = bg;
+    roundRect(ctx, 0, 0, W, H, 28);
+    ctx.fill();
+
+    // ── Radial spotlight (top-left) ──
+    const spotlight = ctx.createRadialGradient(0, 0, 0, 0, 0, W * 0.75);
+    spotlight.addColorStop(0, 'rgba(255,255,255,0.07)');
+    spotlight.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = spotlight;
+    roundRect(ctx, 0, 0, W, H, 28);
+    ctx.fill();
+
+    // ── Noise grain ──
+    ctx.fillStyle = 'rgba(255,255,255,0.022)';
+    for (let i = 0; i < 2400; i++) {
+        ctx.beginPath();
+        ctx.arc(Math.random() * W, Math.random() * H, 0.7, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // ── Geometric rings (decorative) ──
+    const ringX = W - 80, ringY = H + 40;
+    for (let r = 80; r <= 240; r += 60) {
+        ctx.beginPath();
+        ctx.arc(ringX, ringY, r, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = r === 80 ? 28 : 18;
+        ctx.stroke();
+    }
+
+    // ── Thin horizontal rule below identity ──
+    const ruleY = H / 2 + 68;
+    ctx.beginPath();
+    ctx.moveTo(36, ruleY);
+    ctx.lineTo(W - 220, ruleY);
+    const ruleGrad = ctx.createLinearGradient(36, 0, W - 220, 0);
+    ruleGrad.addColorStop(0, 'rgba(255,255,255,0.15)');
+    ruleGrad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.strokeStyle = ruleGrad;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // ── Avatar (double ring) ──
+    const avX = 80, avY = H / 2 - 10;
+    // outer ring
+    ctx.beginPath();
+    ctx.arc(avX, avY, 58, 0, Math.PI * 2);
+    ctx.strokeStyle = theme.accent + '50'; // 31% opacity
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // middle ring
+    ctx.beginPath();
+    ctx.arc(avX, avY, 51, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // fill
+    const aGrad = ctx.createRadialGradient(avX - 12, avY - 12, 4, avX, avY, 48);
+    aGrad.addColorStop(0, 'rgba(255,255,255,0.22)');
+    aGrad.addColorStop(1, 'rgba(0,0,0,0.25)');
+    ctx.beginPath();
+    ctx.arc(avX, avY, 48, 0, Math.PI * 2);
+    ctx.fillStyle = aGrad;
+    ctx.fill();
+    // initials
+    const initials = (name || 'P').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'P';
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${initials.length > 1 ? 28 : 34}px "Outfit", "Segoe UI", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(initials, avX, avY);
+
+    // ── Name ──
+    const textX = 160;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `700 30px "Outfit", "Segoe UI", sans-serif`;
+    ctx.fillText(name || 'Phantom User', textX, H / 2 - 32);
+
+    // ── Handle ──
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = `400 15px "JetBrains Mono", "Courier New", monospace`;
+    ctx.fillText(handle ? `@${handle}` : '@phantom', textX, H / 2);
+
+    // ── "PHANTOM ENCRYPTED" pill badge ──
+    const badgeX = textX, badgeY = H / 2 + 18;
+    const badgeText = '🔐  PHANTOM ENCRYPTED';
+    ctx.font = `600 10px "Outfit", "Segoe UI", sans-serif`;
+    const badgeW = ctx.measureText(badgeText).width + 20;
+    roundRect(ctx, badgeX - 2, badgeY - 12, badgeW, 20, 6);
+    ctx.fillStyle = theme.accent + '22';
+    ctx.fill();
+    ctx.strokeStyle = theme.accent + '55';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = theme.accent;
+    ctx.fillText(badgeText, badgeX + 8, badgeY + 2);
+
+    // ── QR code ──
+    const qrSize = 164;
+    const qrX = W - qrSize - 36;
+    const qrY = H / 2 - qrSize / 2 - 10;
+
+    try {
+        const QRCode = (await import('qrcode')).default;
+        const qrDataUrl = await QRCode.toDataURL(ciphertext.slice(0, 400) || 'https://phantom.app', {
+            width: qrSize,
+            margin: 0,
+            color: { dark: '#FFFFFF', light: '#00000000' },
+            errorCorrectionLevel: 'M',
+        });
+        const img = new Image();
+        await new Promise<void>((res) => { img.onload = () => res(); img.src = qrDataUrl; });
+
+        // QR panel background
+        roundRect(ctx, qrX - 12, qrY - 12, qrSize + 24, qrSize + 24, 16);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+    } catch {
+        roundRect(ctx, qrX - 12, qrY - 12, qrSize + 24, qrSize + 24, 16);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.font = '11px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('QR Unavailable', qrX + qrSize / 2, qrY + qrSize / 2);
+        ctx.textAlign = 'left';
+    }
+
+    // ── "Scan to decrypt" label below QR ──
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.font = `400 10px "JetBrains Mono", "Courier New", monospace`;
+    ctx.fillText('SCAN TO DECRYPT', qrX + qrSize / 2, qrY + qrSize + 22);
+
+    // ── Bottom watermark ──
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.font = `500 10px "Outfit", "Segoe UI", sans-serif`;
+    ctx.fillText('phantom.app  ·  AES-256-GCM  ·  PBKDF2-SHA256  ·  Zero-Knowledge', 36, H - 22);
+
+    // ── Theme name chip (top-right corner) ──
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.font = `500 10px "Outfit", "Segoe UI", sans-serif`;
+    ctx.fillText(theme.name.toUpperCase(), W - 36, 30);
+}
+
+// Helper to draw rounded rects without the non-standard CanvasRenderingContext2D.roundRect (fallback)
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+}
+
+// ─── Modal ───────────────────────────────────────────────────────────────────
 
 export function IdentityCardModal({ isOpen, onClose, ciphertext }: Props) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [name, setName] = useState('');
     const [handle, setHandle] = useState('');
-    const [gradientIdx, setGradientIdx] = useState(0);
+    const [themeIdx, setThemeIdx] = useState(0);
     const [rendered, setRendered] = useState(false);
+    const [copied, setCopied] = useState(false);
 
-    // Draw the card on canvas whenever inputs change
-    useEffect(() => {
-        if (!isOpen || !canvasRef.current) return;
-        drawCard();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, name, handle, gradientIdx, ciphertext]);
-
-    const drawCard = async () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        const W = 700;
-        const H = 380;
-        canvas.width = W;
-        canvas.height = H;
-
-        const [c1, c2, c3] = GRADIENT_PRESETS[gradientIdx];
-
-        // Background gradient
-        const bg = ctx.createLinearGradient(0, 0, W, H);
-        bg.addColorStop(0, c1);
-        bg.addColorStop(0.5, c2);
-        bg.addColorStop(1, c3);
-        ctx.fillStyle = bg;
-        ctx.roundRect(0, 0, W, H, 24);
-        ctx.fill();
-
-        // Noise texture overlay (subtle dots)
-        ctx.fillStyle = 'rgba(255,255,255,0.025)';
-        for (let i = 0; i < 1200; i++) {
-            ctx.beginPath();
-            ctx.arc(Math.random() * W, Math.random() * H, 0.8, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // Decorative arc in bottom-right
-        ctx.beginPath();
-        ctx.arc(W + 60, H + 60, 200, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-        ctx.lineWidth = 40;
-        ctx.stroke();
-
-        // Avatar circle
-        const avatarX = 72, avatarY = H / 2;
-        ctx.beginPath();
-        ctx.arc(avatarX, avatarY, 48, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.12)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Initials
-        const initials = (name || 'P').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'P';
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
-        ctx.font = `bold ${initials.length > 1 ? 26 : 32}px "Outfit", sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(initials, avatarX, avatarY);
-
-        // Name
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'alphabetic';
-        ctx.fillStyle = 'rgba(255,255,255,0.95)';
-        ctx.font = `bold 26px "Outfit", sans-serif`;
-        ctx.fillText(name || 'Phantom User', 140, H / 2 - 22);
-
-        // Handle
-        ctx.fillStyle = 'rgba(255,255,255,0.55)';
-        ctx.font = `400 15px "JetBrains Mono", monospace`;
-        ctx.fillText(handle ? `@${handle}` : '@phantom', 140, H / 2 + 4);
-
-        // Phantom brand label
-        ctx.fillStyle = 'rgba(255,255,255,0.35)';
-        ctx.font = `600 11px "Outfit", sans-serif`;
-        ctx.letterSpacing = '0.15em';
-        ctx.fillText('PHANTOM ENCRYPTED', 140, H / 2 + 30);
-        ctx.letterSpacing = '0';
-
-        // Divider
-        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(32, H / 2 + 52);
-        ctx.lineTo(420, H / 2 + 52);
-        ctx.stroke();
-
-        // QR code section — draw QR using qrcode library
-        try {
-            const QRCode = (await import('qrcode')).default;
-            const qrDataUrl = await QRCode.toDataURL(ciphertext.slice(0, 300) || 'https://phantom.app', {
-                width: 140,
-                margin: 1,
-                color: { dark: '#FFFFFF', light: '#00000000' },
-                errorCorrectionLevel: 'L',
-            });
-            const img = new Image();
-            await new Promise<void>((res) => {
-                img.onload = () => res();
-                img.src = qrDataUrl;
-            });
-
-            // QR background bubble
-            ctx.fillStyle = 'rgba(0,0,0,0.25)';
-            ctx.roundRect(W - 188, H / 2 - 82, 160, 160, 12);
-            ctx.fill();
-
-            ctx.drawImage(img, W - 180, H / 2 - 74, 144, 144);
-        } catch {
-            // QR fallback
-            ctx.fillStyle = 'rgba(255,255,255,0.05)';
-            ctx.roundRect(W - 188, H / 2 - 82, 160, 160, 12);
-            ctx.fill();
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.font = '11px monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText('QR Unavailable', W - 108, H / 2 + 4);
-        }
-
-        // Bottom: "Scan to decrypt" label
-        ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.font = '10px "JetBrains Mono", monospace';
-        ctx.fillText('Scan QR to decrypt', W - 108, H / 2 + 98);
-
-        // Phantom watermark — bottom-left
-        ctx.textAlign = 'left';
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.font = `bold 11px "Outfit", sans-serif`;
-        ctx.fillText('Phantom · AES-256-GCM · Zero Knowledge', 32, H - 20);
-
+    const draw = useCallback(async () => {
+        if (!canvasRef.current) return;
+        setRendered(false);
+        await renderCard(canvasRef.current, { name, handle, themeIdx, ciphertext });
         setRendered(true);
-    };
+    }, [name, handle, themeIdx, ciphertext]);
+
+    useEffect(() => {
+        if (isOpen) draw();
+    }, [isOpen, draw]);
 
     const handleDownload = () => {
         const canvas = canvasRef.current;
@@ -169,6 +242,22 @@ export function IdentityCardModal({ isOpen, onClose, ciphertext }: Props) {
         link.href = canvas.toDataURL('image/png');
         link.click();
     };
+
+    const handleCopy = async () => {
+        try {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            });
+        } catch { /* clipboard API unavailable */ }
+    };
+
+    const prevTheme = () => setThemeIdx(i => (i - 1 + THEMES.length) % THEMES.length);
+    const nextTheme = () => setThemeIdx(i => (i + 1) % THEMES.length);
 
     return (
         <AnimatePresence>
@@ -180,107 +269,222 @@ export function IdentityCardModal({ isOpen, onClose, ciphertext }: Props) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/70 backdrop-blur-md"
+                        className="absolute inset-0 bg-black/80 backdrop-blur-md"
                     />
 
-                    {/* Modal */}
+                    {/* Modal panel */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.93, y: 24 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        transition={{ duration: 0.25 }}
-                        className="relative w-full max-w-2xl bg-[#0d0d10] border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+                        exit={{ opacity: 0, scale: 0.93, y: 24 }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        className="relative w-full max-w-2xl bg-[#0b0b0e] border border-white/10 rounded-3xl overflow-hidden shadow-2xl shadow-black/60"
                     >
+                        {/* Ambient top-glow */}
+                        <div
+                            className="absolute top-0 left-0 right-0 h-px"
+                            style={{ background: `linear-gradient(90deg, transparent, ${THEMES[themeIdx].accent}60, transparent)` }}
+                        />
+
                         {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
                             <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                <div
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center"
+                                    style={{ background: `${THEMES[themeIdx].accent}22`, color: THEMES[themeIdx].accent }}
+                                >
                                     <CreditCard className="w-4 h-4" />
                                 </div>
                                 <div>
-                                    <h2 className="text-base font-bold text-white">QR Identity Card</h2>
-                                    <p className="text-[11px] text-gray-500">Your encrypted message embedded in a shareable card</p>
+                                    <h2 className="text-sm font-bold text-white">QR Identity Card</h2>
+                                    <p className="text-[11px] text-gray-500">Generate · Customise · Share</p>
                                 </div>
                             </div>
-                            <button onClick={onClose} className="p-2 text-gray-500 hover:text-white transition-colors">
-                                <X className="w-5 h-5" />
-                            </button>
+                            <motion.button
+                                onClick={onClose}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.92 }}
+                                className="p-2 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </motion.button>
                         </div>
 
-                        <div className="p-6 space-y-5">
-                            {/* Inputs */}
+                        <div className="p-5 space-y-4">
+
+                            {/* ── Inputs row ── */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Your Name</label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Display Name</label>
+                                        <span className="text-[10px] text-gray-600">{name.length}/30</span>
+                                    </div>
                                     <input
                                         value={name}
                                         onChange={e => setName(e.target.value)}
                                         placeholder="e.g. Phantom User"
                                         maxLength={30}
-                                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500/50"
+                                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none transition-colors"
+                                        style={{ '--tw-ring-color': THEMES[themeIdx].accent } as React.CSSProperties}
+                                        onFocus={e => (e.target.style.borderColor = THEMES[themeIdx].accent + '60')}
+                                        onBlur={e => (e.target.style.borderColor = '')}
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Handle</label>
-                                    <input
-                                        value={handle}
-                                        onChange={e => setHandle(e.target.value.replace('@', ''))}
-                                        placeholder="e.g. phantom_user"
-                                        maxLength={25}
-                                        className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500/50"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Gradient picker */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Card Theme</label>
-                                <div className="flex gap-2 flex-wrap">
-                                    {GRADIENT_PRESETS.map((g, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setGradientIdx(i)}
-                                            className={`w-8 h-8 rounded-full border-2 transition-transform hover:scale-110 ${i === gradientIdx ? 'border-white scale-110' : 'border-transparent'}`}
-                                            style={{ background: `linear-gradient(135deg, ${g[0]}, ${g[2]})` }}
-                                            title={`Theme ${i + 1}`}
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Handle</label>
+                                        <span className="text-[10px] text-gray-600">{handle.length}/25</span>
+                                    </div>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm select-none">@</span>
+                                        <input
+                                            value={handle}
+                                            onChange={e => setHandle(e.target.value.replace('@', ''))}
+                                            placeholder="phantom_user"
+                                            maxLength={25}
+                                            className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-8 pr-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none transition-colors"
+                                            onFocus={e => (e.target.style.borderColor = THEMES[themeIdx].accent + '60')}
+                                            onBlur={e => (e.target.style.borderColor = '')}
                                         />
-                                    ))}
-                                    <button
-                                        onClick={() => setGradientIdx((gradientIdx + 1) % GRADIENT_PRESETS.length)}
-                                        className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
-                                        title="Next theme"
-                                    >
-                                        <RefreshCw className="w-3.5 h-3.5" />
-                                    </button>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Card Preview */}
-                            <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+                            {/* ── Theme picker ── */}
+                            <div className="flex items-center gap-3">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex-shrink-0">Theme</span>
+
+                                {/* Prev */}
+                                <motion.button
+                                    onClick={prevTheme}
+                                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                                    className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors flex-shrink-0"
+                                >
+                                    <ChevronLeft className="w-3.5 h-3.5" />
+                                </motion.button>
+
+                                {/* Swatches */}
+                                <div className="flex gap-2 flex-1 flex-wrap">
+                                    {THEMES.map((g, i) => (
+                                        <motion.button
+                                            key={i}
+                                            onClick={() => setThemeIdx(i)}
+                                            whileHover={{ scale: 1.18 }}
+                                            whileTap={{ scale: 0.9 }}
+                                            title={g.name}
+                                            className="relative w-7 h-7 rounded-full border-2 transition-all flex-shrink-0"
+                                            style={{
+                                                background: `linear-gradient(135deg, ${g.stops[0]}, ${g.stops[2]})`,
+                                                borderColor: i === themeIdx ? g.accent : 'transparent',
+                                                boxShadow: i === themeIdx ? `0 0 0 2px ${g.accent}40` : 'none',
+                                            }}
+                                        >
+                                            {i === themeIdx && (
+                                                <motion.div
+                                                    layoutId="activeThemeDot"
+                                                    className="absolute inset-0.5 rounded-full"
+                                                    style={{ background: g.accent + '30' }}
+                                                />
+                                            )}
+                                        </motion.button>
+                                    ))}
+                                </div>
+
+                                {/* Next */}
+                                <motion.button
+                                    onClick={nextTheme}
+                                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                                    className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors flex-shrink-0"
+                                >
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                </motion.button>
+
+                                {/* Active theme name */}
+                                <motion.span
+                                    key={themeIdx}
+                                    initial={{ opacity: 0, x: 6 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="text-xs font-semibold flex-shrink-0"
+                                    style={{ color: THEMES[themeIdx].accent }}
+                                >
+                                    {THEMES[themeIdx].name}
+                                </motion.span>
+                            </div>
+
+                            {/* ── Card preview ── */}
+                            <div
+                                className="rounded-2xl overflow-hidden border bg-black/50 relative"
+                                style={{ borderColor: THEMES[themeIdx].accent + '25' }}
+                            >
+                                {/* Rendering shimmer overlay */}
+                                <AnimatePresence>
+                                    {!rendered && (
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                                        >
+                                            <div className="flex items-center gap-2 text-gray-400 text-xs">
+                                                <motion.div
+                                                    animate={{ rotate: 360 }}
+                                                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                                                    className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                                                />
+                                                Rendering…
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                                 <canvas
                                     ref={canvasRef}
                                     className="w-full"
-                                    style={{ aspectRatio: '700/380', imageRendering: 'auto' }}
+                                    style={{ aspectRatio: '800/440', imageRendering: 'auto' }}
                                 />
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex gap-3">
-                                <button
+                            {/* ── Actions ── */}
+                            <div className="flex gap-2.5">
+                                <motion.button
                                     onClick={handleDownload}
                                     disabled={!rendered}
-                                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-40 disabled:pointer-events-none"
+                                    style={{ background: `linear-gradient(135deg, ${THEMES[themeIdx].stops[1]}, ${THEMES[themeIdx].stops[2]})` }}
                                 >
                                     <Download className="w-4 h-4" />
                                     Download PNG
-                                </button>
-                                <button
+                                </motion.button>
+
+                                <motion.button
+                                    onClick={handleCopy}
+                                    disabled={!rendered}
+                                    whileHover={{ scale: 1.04 }}
+                                    whileTap={{ scale: 0.96 }}
+                                    className="flex items-center gap-1.5 px-4 py-2.5 bg-white/5 hover:bg-white/8 border border-white/10 text-gray-300 hover:text-white text-sm font-semibold rounded-xl transition-all disabled:opacity-40 disabled:pointer-events-none"
+                                >
+                                    <AnimatePresence mode="wait">
+                                        {copied
+                                            ? <motion.span key="check" initial={{ scale: 0.7 }} animate={{ scale: 1 }} className="flex items-center gap-1 text-emerald-400"><Check className="w-4 h-4" /> Copied!</motion.span>
+                                            : <motion.span key="copy" initial={{ scale: 0.7 }} animate={{ scale: 1 }} className="flex items-center gap-1"><Copy className="w-4 h-4" /></motion.span>
+                                        }
+                                    </AnimatePresence>
+                                </motion.button>
+
+                                <motion.button
                                     onClick={onClose}
-                                    className="px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400 hover:text-white text-sm font-semibold rounded-xl transition-colors"
+                                    whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+                                    className="px-4 py-2.5 bg-white/5 hover:bg-white/8 border border-white/10 text-gray-400 hover:text-white text-sm font-semibold rounded-xl transition-all"
                                 >
                                     Close
-                                </button>
+                                </motion.button>
                             </div>
+
+                            {/* Tip */}
+                            <p className="text-[10px] text-gray-600 text-center leading-relaxed">
+                                The QR encodes up to 400 chars of your ciphertext. Share as a file — do not screenshot — to preserve quality.
+                            </p>
                         </div>
                     </motion.div>
                 </div>
