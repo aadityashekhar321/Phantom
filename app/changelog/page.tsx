@@ -7,9 +7,27 @@ import { useT } from '@/components/LanguageProvider';
 
 const changelog = [
     {
-        version: 'v2.4.0',
+        version: 'v2.5.0',
         date: '2026-03-04',
         tag: 'latest',
+        changes: [
+            { type: 'feat', text: 'Architecture & Trust — all 10 sections now scroll-reveal with a reusable Section wrapper using Framer Motion whileInView' },
+            { type: 'feat', text: 'Comparison cards (Phantom vs Signal/WhatsApp) lift and glow on hover with themed box-shadows' },
+            { type: 'feat', text: 'Use-case cards (Journalists, Archival, IP) stagger-fade in on scroll; icons rotate + scale on hover' },
+            { type: 'feat', text: 'Pipeline nodes pop in sequentially with a 100ms stagger; arrows scale in from origin; nodes lift + scale on hover' },
+            { type: 'feat', text: 'Math stat cards (Brute-force, GPU, Time, GCM Tag) lift and brighten border on hover' },
+            { type: 'feat', text: 'Threat Model cards lift with emerald/orange glow; inner threat rows slide right on hover' },
+            { type: 'feat', text: 'FAQ chevron now animates via Framer Motion rotate instead of CSS class swap; FAQ rows highlight on hover' },
+            { type: 'feat', text: 'GitHub CTA button spring-scales on hover and tap' },
+            { type: 'feat', text: 'Demo step pills animate with spring scale on hover/tap' },
+            { type: 'perf', text: 'All animations GPU-only (opacity, transform) — zero layout shifts, no repaints, glitch-free on all screen sizes' },
+        ],
+    },
+    {
+        version: 'v2.4.0',
+        date: '2026-03-04',
+        tag: '',
+
         changes: [
             { type: 'feat', text: 'How It Works — scroll-triggered staggered fade-up animations on all 3 step rows using Framer Motion whileInView' },
             { type: 'feat', text: 'Step icon circles now spring-animate on hover with a subtle scale + ring pulse effect' },
