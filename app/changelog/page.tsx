@@ -7,9 +7,19 @@ import { useT } from '@/components/LanguageProvider';
 
 const changelog = [
     {
-        version: 'v2.7.0',
+        version: 'v2.8.0',
         date: '2026-03-04',
         tag: 'latest',
+        changes: [
+            { type: 'feat', text: 'QR Identity Card — embedded a custom Phantom logo ("P") inside the generated QR code itself for stronger branding' },
+            { type: 'feat', text: 'QR Identity Card — added dynamic "ISSUED: YYYY-MM-DD" timestamp metadata stamp to the canvas watermark area' },
+            { type: 'perf', text: 'PWA — Forced git tracking of generated service worker files (sw.js, workbox) to ensure offline support is reliably deployed' },
+        ],
+    },
+    {
+        version: 'v2.7.0',
+        date: '2026-03-04',
+        tag: '',
         changes: [
             { type: 'feat', text: 'QR Identity Card — added responsive 3D tilt interaction to the card preview that fluidly tracks mouse movement using Framer Motion springs' },
             { type: 'feat', text: 'QR Identity Card — added dynamic glossy glare overlay to the canvas that shifts relative to the mouse position for a physical card feel' },

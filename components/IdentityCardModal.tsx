@@ -168,6 +168,29 @@ async function renderCard(
         ctx.stroke();
 
         ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+
+        // ── Phantom logo overlay in center of QR ──
+        const logoSize = qrSize * 0.22;
+        const lx = qrX + qrSize / 2 - logoSize / 2;
+        const ly = qrY + qrSize / 2 - logoSize / 2;
+
+        // Dark background to mask QR noise
+        ctx.fillStyle = '#0b0b0e';
+        roundRect(ctx, lx - 4, ly - 4, logoSize + 8, logoSize + 8, 8);
+        ctx.fill();
+
+        // Colored logo block
+        ctx.fillStyle = theme.accent;
+        roundRect(ctx, lx, ly, logoSize, logoSize, 6);
+        ctx.fill();
+
+        // 'P' init
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `900 ${logoSize * 0.65}px "Outfit", "Segoe UI", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('P', lx + logoSize / 2, ly + logoSize / 2 + 1);
+        ctx.textAlign = 'left'; // reset
     } catch {
         roundRect(ctx, qrX - 12, qrY - 12, qrSize + 24, qrSize + 24, 16);
         ctx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -190,6 +213,12 @@ async function renderCard(
     ctx.fillStyle = 'rgba(255,255,255,0.18)';
     ctx.font = `500 10px "Outfit", "Segoe UI", sans-serif`;
     ctx.fillText('phantom.app  ·  AES-256-GCM  ·  PBKDF2-SHA256  ·  Zero-Knowledge', 36, H - 22);
+
+    // ── Issued Date ──
+    const today = new Date().toISOString().split('T')[0];
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillText(`ISSUED: ${today}`, W - 36, H - 22);
 
     // ── Theme name chip (top-right corner) ──
     ctx.textAlign = 'right';
@@ -497,7 +526,7 @@ export function IdentityCardModal({ isOpen, onClose, ciphertext }: Props) {
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
-                                    
+
                                     <canvas
                                         ref={canvasRef}
                                         className="w-full relative z-10"
