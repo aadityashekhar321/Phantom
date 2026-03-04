@@ -17,15 +17,7 @@ const fadeUpVariant = {
     }),
 };
 
-/** Horizontal slide-in for the step icon column */
-const slideInLeft = {
-    hidden: { opacity: 0, x: -20 },
-    visible: (delay: number = 0) => ({
-        opacity: 1,
-        x: 0,
-        transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay },
-    }),
-};
+
 
 // Shared viewport config — triggers once, 10% threshold
 const vp = { once: true, amount: 0.1 };

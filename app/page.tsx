@@ -1363,113 +1363,181 @@ export default function Home() {
         }}
       />
 
-      {/* ── Batch Encrypt Section ────────────────────────────── */}
-      <div className="w-full max-w-5xl mt-8 px-1">
-        <GlassCard className="p-6 sm:p-8 space-y-5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center">
-              <Files className="w-4 h-4 text-violet-400" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-white">{t.vault.batchEncrypt}</h2>
-              <p className="text-xs text-gray-500">{t.vault.batchEncryptDesc}</p>
+      {/* ── Batch Encrypt Section (Upgraded) ────────────────────────────── */}
+      <div className="w-full max-w-5xl mt-8 px-1 relative group">
+        {/* Ambient section glow */}
+        <div className="absolute -inset-1 bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 rounded-[2rem] blur-xl opacity-0 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
+
+        <GlassCard className="p-6 sm:p-8 space-y-6 relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+                <Files className="w-5 h-5 text-violet-300" />
+              </div>
+              <div>
+                <h2 className="text-lg font-extrabold text-white tracking-tight">{t.vault.batchEncrypt}</h2>
+                <p className="text-xs sm:text-sm text-gray-400">{t.vault.batchEncryptDesc}</p>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              ref={batchInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = Array.from(e.target.files || []);
-                const readers = files.map(f => new Promise<{ name: string; data: string }>((resolve, reject) => {
-                  const r = new FileReader();
-                  r.onload = () => resolve({ name: f.name, data: r.result as string });
-                  r.onerror = reject;
-                  r.readAsDataURL(f);
-                }));
-                Promise.all(readers).then(results => {
-                  setBatchFiles(prev => [...prev, ...results]);
-                  toast.success(`${results.length} file(s) added to batch.`);
-                });
-              }}
-            />
-            <button
-              onClick={() => batchInputRef.current?.click()}
-              className="flex items-center gap-2 text-sm font-semibold text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 px-4 py-2.5 rounded-xl transition-all"
-            >
-              <Upload className="w-4 h-4" />
-              Add Files
-              {batchFiles.length > 0 && <span className="bg-violet-500/30 text-violet-200 text-xs px-1.5 py-0.5 rounded-full">{batchFiles.length}</span>}
-            </button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Left Column: Input / Actions */}
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-violet-200 uppercase tracking-widest ml-1 drop-shadow-sm">Archive Password</label>
+                <input
+                  type="password"
+                  value={batchPassword}
+                  onChange={e => setBatchPassword(e.target.value)}
+                  placeholder="Master password for the .phantom bundle..."
+                  className="w-full bg-black/60 border border-white/10 rounded-2xl px-5 py-3.5 text-base text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50 shadow-inner font-mono transition-all"
+                />
+              </div>
 
-            <input
-              type="password"
-              value={batchPassword}
-              onChange={e => setBatchPassword(e.target.value)}
-              placeholder={t.vault.batchPassword}
-              className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-violet-500/40 font-mono"
-            />
-
-            <button
-              onClick={handleBatchEncrypt}
-              disabled={batchLoading || batchFiles.length === 0 || !batchPassword}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold disabled:opacity-40 disabled:pointer-events-none transition-colors whitespace-nowrap"
-            >
-              {batchLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Lock className="w-4 h-4" /> Encrypt & Bundle</>}
-            </button>
-          </div>
-
-          {batchFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {batchFiles.map((f, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-gray-400">
-                  <FileText className="w-3 h-3 text-violet-400" />
-                  <span className="max-w-[120px] truncate">{f.name}</span>
-                  <button onClick={() => setBatchFiles(prev => prev.filter((_, j) => j !== i))} className="text-gray-600 hover:text-red-400 transition-colors ml-1">
-                    <CloseIcon className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
+              <button
+                onClick={handleBatchEncrypt}
+                disabled={batchLoading || batchFiles.length === 0 || !batchPassword}
+                className="w-full h-14 rounded-2xl flex items-center justify-center gap-3 font-bold text-base transition-all disabled:opacity-50 disabled:pointer-events-none group bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] border border-white/10"
+              >
+                {batchLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Lock className="w-5 h-5 text-white/80 group-hover:scale-110 transition-transform" />
+                    Encrypt & Bundle ({batchFiles.length} files)
+                  </>
+                )}
+              </button>
             </div>
-          )}
+
+            {/* Right Column: Dropzone & File List */}
+            <div className="flex flex-col h-full space-y-3">
+              <div className="flex-1 min-h-[140px] border-2 border-dashed border-white/10 hover:border-violet-500/50 rounded-2xl bg-black/30 flex flex-col items-center justify-center p-6 text-center transition-colors relative group overflow-hidden">
+                <div className="absolute inset-0 bg-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <input
+                  ref={batchInputRef}
+                  type="file"
+                  multiple
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    const readers = files.map(f => new Promise<{ name: string; data: string }>((resolve, reject) => {
+                      const r = new FileReader();
+                      r.onload = () => resolve({ name: f.name, data: r.result as string });
+                      r.onerror = reject;
+                      r.readAsDataURL(f);
+                    }));
+                    Promise.all(readers).then(results => {
+                      setBatchFiles(prev => [...prev, ...results]);
+                      toast.success(`${results.length} file(s) added to batch.`);
+                    });
+                  }}
+                />
+                <Upload className="w-8 h-8 text-gray-500 group-hover:text-violet-400 mb-3 transition-colors duration-300" />
+                <p className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors">Drag & drop multiple files here</p>
+                <p className="text-xs text-gray-500 mt-1">or click to browse your device</p>
+              </div>
+
+              <AnimatePresence>
+                {batchFiles.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-black/40 border border-white/5 rounded-2xl p-4 max-h-[160px] overflow-y-auto custom-scrollbar flex flex-wrap gap-2"
+                  >
+                    {batchFiles.map((f, i) => (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        key={i}
+                        className="flex items-center gap-2 text-xs bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-3 py-1.5 text-gray-300 transition-colors group/chip"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-violet-400" />
+                        <span className="max-w-[120px] truncate">{f.name}</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setBatchFiles(prev => prev.filter((_, j) => j !== i)); }}
+                          className="text-gray-600 hover:text-red-400 focus:outline-none transition-colors ml-1 p-0.5"
+                          title="Remove file"
+                        >
+                          <CloseIcon className="w-3.5 h-3.5" />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </GlassCard>
       </div>
 
-      {/* Supported Formats Marquee */}
-      <div className="w-full max-w-4xl pt-8 pb-4 px-4 overflow-hidden relative">
-        <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-[#050510] to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-[#050510] to-transparent z-10 pointer-events-none" />
-        <p className="text-center text-xs font-semibold text-gray-500 uppercase tracking-[0.2em] mb-6">{t.vault.engineeredFor}</p>
+      {/* Supported Formats Marquee (Upgraded Glass Cards) */}
+      <div className="w-full max-w-5xl pt-12 pb-8 px-4 overflow-hidden relative">
+        <div className="absolute left-0 top-0 bottom-0 w-16 md:w-40 bg-gradient-to-r from-[#050510] to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-16 md:w-40 bg-gradient-to-l from-[#050510] to-transparent z-10 pointer-events-none" />
 
-        <div className="flex animate-[marquee_20s_linear_infinite] w-max gap-8 md:gap-16 items-center flex-nowrap opacity-60 hover:opacity-100 transition-opacity">
+        <p className="text-center text-xs font-bold text-gray-500 uppercase tracking-[0.25em] mb-8 relative z-20">
+          {t.vault.engineeredFor}
+        </p>
+
+        <div className="flex animate-[marquee_25s_linear_infinite] w-max gap-6 md:gap-8 items-center flex-nowrap hover:[animation-play-state:paused] transition-all py-4">
           {/* Double the items to create a seamless infinite scroll effect */}
           {[...Array(2)].map((_, i) => (
             <React.Fragment key={i}>
-              <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><FileText className="w-4 h-4 text-indigo-400" /> TEXT MESSAGES</div>
-              <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><FileText className="w-4 h-4 text-rose-400" /> PDF DOCUMENTS</div>
-              <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><ImageIcon className="w-4 h-4 text-emerald-400" /> PNG / JPG CARRIERS</div>
-              <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><FileText className="w-4 h-4 text-cyan-400" /> JSON PAYLOADS</div>
-              <div className="flex items-center gap-2 text-gray-400 font-mono text-sm whitespace-nowrap"><Key className="w-4 h-4 text-yellow-500" /> MNEMONIC SEEDS</div>
+              <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl px-5 py-3 shadow-lg hover:border-indigo-500/30 hover:shadow-[0_0_20px_rgba(99,102,241,0.2)] hover:-translate-y-1 transition-all cursor-default select-none group">
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/20 flex items-center justify-center group-hover:scale-110 transition-transform"><FileText className="w-4 h-4 text-indigo-400" /></div>
+                <span className="font-bold text-sm text-gray-200 tracking-wide">TEXT MESSAGES</span>
+              </div>
+              <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl px-5 py-3 shadow-lg hover:border-rose-500/30 hover:shadow-[0_0_20px_rgba(244,63,94,0.2)] hover:-translate-y-1 transition-all cursor-default select-none group">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/20 flex items-center justify-center group-hover:scale-110 transition-transform"><FileText className="w-4 h-4 text-rose-400" /></div>
+                <span className="font-bold text-sm text-gray-200 tracking-wide">PDF DOCUMENTS</span>
+              </div>
+              <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl px-5 py-3 shadow-lg hover:border-emerald-500/30 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:-translate-y-1 transition-all cursor-default select-none group">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform"><ImageIcon className="w-4 h-4 text-emerald-400" /></div>
+                <span className="font-bold text-sm text-gray-200 tracking-wide">PNG / JPG CARRIERS</span>
+              </div>
+              <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl px-5 py-3 shadow-lg hover:border-cyan-500/30 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:-translate-y-1 transition-all cursor-default select-none group">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform"><FileText className="w-4 h-4 text-cyan-400" /></div>
+                <span className="font-bold text-sm text-gray-200 tracking-wide">JSON PAYLOADS</span>
+              </div>
+              <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl px-5 py-3 shadow-lg hover:border-yellow-500/30 hover:shadow-[0_0_20px_rgba(234,179,8,0.2)] hover:-translate-y-1 transition-all cursor-default select-none group">
+                <div className="w-8 h-8 rounded-xl bg-yellow-500/20 flex items-center justify-center group-hover:scale-110 transition-transform"><Key className="w-4 h-4 text-yellow-500" /></div>
+                <span className="font-bold text-sm text-gray-200 tracking-wide">MNEMONIC SEEDS</span>
+              </div>
             </React.Fragment>
           ))}        </div>
       </div>
 
-      {/* ── Features Strip ───────────────────────────── */}
-      <div className="w-full max-w-5xl py-6 px-4">
-        <div className="flex flex-wrap items-center justify-center gap-3">
+      {/* ── Features Strip (Interactive Glow Badges) ───────────────────────────── */}
+      <div className="w-full max-w-5xl py-8 px-4">
+        <div className="flex flex-wrap items-center justify-center gap-4">
           {[
-            { icon: <Zap className="w-3.5 h-3.5" />, label: 'Instant Encryption', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
-            { icon: <WifiOff className="w-3.5 h-3.5" />, label: 'Works Offline · PWA', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-            { icon: <ImageIcon className="w-3.5 h-3.5" />, label: 'Steganography', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
-            { icon: <ShieldCheck className="w-3.5 h-3.5" />, label: 'Zero Knowledge', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
-            { icon: <QrCode className="w-3.5 h-3.5" />, label: 'QR Code Support', color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
-          ].map(f => (
-            <div key={f.label} className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold border ${f.color}`}>
-              {f.icon}{f.label}
-            </div>
+            { icon: <Zap className="w-4 h-4" />, label: 'Instant Encryption', colorClass: 'text-yellow-400 border-yellow-500/20', glowFrom: 'from-yellow-500/0', glowVia: 'via-yellow-500/10', glowTo: 'to-yellow-500/0' },
+            { icon: <WifiOff className="w-4 h-4" />, label: 'Works Offline · PWA', colorClass: 'text-emerald-400 border-emerald-500/20', glowFrom: 'from-emerald-500/0', glowVia: 'via-emerald-500/10', glowTo: 'to-emerald-500/0' },
+            { icon: <ImageIcon className="w-4 h-4" />, label: 'Steganography', colorClass: 'text-indigo-400 border-indigo-500/20', glowFrom: 'from-indigo-500/0', glowVia: 'via-indigo-500/10', glowTo: 'to-indigo-500/0' },
+            { icon: <ShieldCheck className="w-4 h-4" />, label: 'Zero Knowledge', colorClass: 'text-rose-400 border-rose-500/20', glowFrom: 'from-rose-500/0', glowVia: 'via-rose-500/10', glowTo: 'to-rose-500/0' },
+            { icon: <QrCode className="w-4 h-4" />, label: 'QR Code Support', colorClass: 'text-violet-400 border-violet-500/20', glowFrom: 'from-violet-500/0', glowVia: 'via-violet-500/10', glowTo: 'to-violet-500/0' },
+          ].map((f, i) => (
+            <motion.div
+              key={f.label}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.1 }}
+              whileHover={{ y: -2, scale: 1.05 }}
+              className={`relative group flex flex-col justify-center px-4 py-2 rounded-2xl bg-black/40 border backdrop-blur-md cursor-default select-none transition-all ${f.colorClass}`}
+            >
+              {/* Dynamic hover gradient sweep */}
+              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${f.glowFrom} ${f.glowVia} ${f.glowTo} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
+
+              <div className="flex items-center gap-2.5 relative z-10">
+                {f.icon}
+                <span className="text-sm font-bold tracking-tight text-gray-200 group-hover:text-white transition-colors">{f.label}</span>
+              </div>
+            </motion.div>
           ))}
         </div>
       </div>
