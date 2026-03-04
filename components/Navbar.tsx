@@ -227,6 +227,16 @@ export function Navbar() {
                             </AnimatePresence>
                         </div>
 
+                        {/* Mobile Settings button */}
+                        <button
+                            onClick={() => (window as Window & { _phantomToggleSettings?: () => void })._phantomToggleSettings?.()}
+                            className="p-2 text-gray-500 hover:text-white transition-colors"
+                            title="Global Settings"
+                            aria-label="Global Settings"
+                        >
+                            <Settings className="w-5 h-5" />
+                        </button>
+
                         <button
                             onClick={toggleMenu}
                             className="p-2 text-gray-400 hover:text-white transition-colors z-50 relative focus:outline-none"

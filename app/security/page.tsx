@@ -209,17 +209,26 @@ export default function SecurityInfo() {
             {/* Hero Header — simplified for mobile perf */}
             <div className="text-center space-y-4 px-4">
                 <div className="flex justify-center mb-6 relative w-36 h-36 mx-auto">
-                    {/* Static gradient ring instead of animated blur (mobile-friendly) */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 rounded-[3rem] opacity-20" />
-                    <div className="relative z-10 w-full h-full">
+                    {/* Animated ambient glow — GPU transform only, no repaints */}
+                    <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-500 blur-2xl rounded-[3rem] opacity-25"
+                        animate={{ opacity: [0.15, 0.35, 0.15], scale: [0.88, 1.12, 0.88] }}
+                        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    {/* Floating container */}
+                    <motion.div
+                        animate={{ y: [-6, 6, -6] }}
+                        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                        className="relative z-10 w-full h-full"
+                    >
                         <Image
                             src="/security.webp"
                             alt="Phantom Security Illustration"
                             fill
-                            className="rounded-3xl drop-shadow-[0_0_20px_rgba(248,113,113,0.25)] object-cover"
+                            className="rounded-3xl drop-shadow-[0_0_24px_rgba(248,113,113,0.3)] object-cover"
                             priority
                         />
-                    </div>
+                    </motion.div>
                 </div>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tighter text-red-400">{t.security.title}</h1>
                 <p className="text-gray-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
