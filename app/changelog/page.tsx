@@ -7,9 +7,21 @@ import { useT } from '@/components/LanguageProvider';
 
 const changelog = [
     {
+        version: 'v2.10.0',
+        date: '2026-03-05',
+        tag: 'latest',
+        changes: [
+            { type: 'feat', text: 'Global Polish — "Try a Live Demo" button now dynamically injects a diverse array of fresh, high-stakes payload strings on every click' },
+            { type: 'feat', text: 'Architecture & Trust — upgraded Threat Model and Comparison cards to utilize physical 3D-tilt depth tracking and active gradient borders' },
+            { type: 'feat', text: 'Secure Notes — sidebar note list redesigned with floating glass items, glowing active indicators, and fluid layout scaling' },
+            { type: 'feat', text: 'Changelog — completely rebuilt the page structure into a high-end glowing vertical timeline with translucent version cards' },
+            { type: 'perf', text: 'Responsiveness — executed a comprehensive mobile audit, fixing padding and flex constraints across all Phase 5 pages' },
+        ],
+    },
+    {
         version: 'v2.9.0',
         date: '2026-03-04',
-        tag: 'latest',
+        tag: '',
         changes: [
             { type: 'feat', text: 'How It Works — replaced the static 3-step glass card with beautiful, separate 3D-tilt `StepCard`s featuring interactive glossy glare overlays' },
             { type: 'feat', text: 'Image Handling — applied the same premium mouse-tracking 3D tilt and glare physics to the Advanced Image Handling cards' },
@@ -242,47 +254,58 @@ export default function ChangelogPage() {
             </div>
 
             {/* Timeline */}
-            <div className="relative">
-                <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-500/50 via-white/10 to-transparent ml-3 sm:ml-4 hidden sm:block" />
+            <div className="relative mt-8">
+                {/* Glowing vertical line */}
+                <div className="absolute left-0 sm:left-4 top-4 bottom-0 w-[2px] bg-gradient-to-b from-indigo-500/50 via-violet-500/30 to-transparent hidden sm:block" />
 
                 <div className="space-y-12">
                     {changelog.map((release, idx) => (
                         <motion.div
                             key={release.version}
-                            initial={{ opacity: 0, x: -20 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.4, delay: idx * 0.05 }}
-                            className="sm:pl-10 relative"
+                            initial={{ opacity: 0, x: -20, y: 10 }}
+                            whileInView={{ opacity: 1, x: 0, y: 0 }}
+                            viewport={{ once: true, amount: 0.1 }}
+                            transition={{ type: "spring", stiffness: 280, damping: 25, delay: idx * 0.08 }}
+                            className="sm:pl-16 relative group"
                         >
-                            {/* Version dot */}
-                            <div className="absolute left-0 top-1 w-7 h-7 rounded-full bg-[#09090b] border border-indigo-500/40 flex items-center justify-center text-indigo-400 hidden sm:flex">
-                                <div className="w-2 h-2 rounded-full bg-indigo-400" />
-                            </div>
+                            {/* Animated Node */}
+                            <div className="absolute left-[0.6rem] top-6 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-black border-[3px] border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)] hidden sm:block group-hover:scale-125 group-hover:shadow-[0_0_20px_rgba(99,102,241,0.8)] transition-all duration-300 z-10" />
 
-                            {/* Version header */}
-                            <div className="flex flex-wrap items-center gap-3 mb-4">
-                                <h2 className="text-xl font-bold text-white font-mono">{release.version}</h2>
-                                {release.tag && (
-                                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${release.tag === 'latest' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-white/5 text-gray-500 border border-white/10'}`}>
-                                        {release.tag}
-                                    </span>
-                                )}
-                                <span className="text-sm text-gray-500 flex items-center gap-1.5 font-mono">
-                                    <Tag className="w-3 h-3" />{release.date}
-                                </span>
-                            </div>
+                            {/* Version Card */}
+                            <div className="relative bg-black/40 backdrop-blur-md rounded-3xl border border-white/5 overflow-hidden transition-all duration-500 group-hover:border-indigo-500/30 group-hover:shadow-[0_8px_32px_-12px_rgba(99,102,241,0.2)]">
+                                {/* Subtle internal glare top border */}
+                                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                            {/* Changes */}
-                            <div className="space-y-2">
-                                {release.changes.map((change, i) => (
-                                    <div key={i} className="flex items-start gap-3">
-                                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded flex-shrink-0 mt-0.5 ${tagColors[change.type] || 'text-gray-400 bg-white/5'}`}>
-                                            {change.type}
-                                        </span>
-                                        <p className="text-gray-300 text-sm leading-relaxed">{change.text}</p>
+                                <div className="p-6 sm:p-8">
+                                    {/* Version header */}
+                                    <div className="flex flex-wrap items-center gap-4 mb-6">
+                                        <h2 className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+                                            {release.version}
+                                        </h2>
+                                        {release.tag && (
+                                            <span className={`text-[10px] sm:text-xs font-bold uppercase px-3 py-1 rounded-full tracking-wider ${release.tag === 'latest' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'bg-white/5 text-gray-400 border border-white/10'}`}>
+                                                {release.tag}
+                                            </span>
+                                        )}
+                                        <div className="ml-auto w-full sm:w-auto mt-2 sm:mt-0">
+                                            <span className="text-xs sm:text-sm text-gray-500 flex items-center gap-1.5 font-mono px-3 py-1.5 bg-black/50 border border-white/5 rounded-lg shadow-inner">
+                                                <Tag className="w-3.5 h-3.5 text-gray-400" />{release.date}
+                                            </span>
+                                        </div>
                                     </div>
-                                ))}
+
+                                    {/* Changes List */}
+                                    <div className="space-y-4 relative z-10">
+                                        {release.changes.map((change, i) => (
+                                            <div key={i} className="flex items-start gap-4 p-3 -mx-3 rounded-2xl hover:bg-white/[0.03] transition-colors duration-300">
+                                                <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg flex-shrink-0 mt-0.5 shadow-sm ${tagColors[change.type] || 'text-gray-400 bg-white/5 border border-white/10'}`}>
+                                                    {change.type}
+                                                </span>
+                                                <p className="text-gray-300 text-sm sm:text-base leading-relaxed tracking-wide pt-0.5">{change.text}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </motion.div>
                     ))}

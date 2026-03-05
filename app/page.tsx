@@ -768,7 +768,16 @@ export default function Home() {
         {/* Try Demo Button */}
         <button
           onClick={() => {
-            setText('CLASSIFIED: The recovery phrase is “abandon ability above absent absorb abstract” — do not share under any circumstances.');
+            const demoPayloads = [
+              'CLASSIFIED: The recovery phrase is “abandon ability above absent absorb abstract” — do not share under any circumstances.',
+              'INTEL_REPORT_77B: Target acquired at coordinates 34.0522° N, 118.2437° W. Awaiting further command.',
+              'API_KEY_PROD: pk_live_51MabcdeFghIjklMnOpqRsTuVwXyZ0123456789 (Rotate immediately after use)',
+              'SERVER_ACCESS: SSH root@192.168.1.100 -p 2200. Temporary password: `Gr$p7w!q9#`',
+              'FINANCIAL_ROUTING: Transfer $4,500,000 to offshore holding acc [4829-1102-3948]. Memo: Project Titan.'
+            ];
+            const randomPayload = demoPayloads[Math.floor(Math.random() * demoPayloads.length)];
+
+            setText(randomPayload);
             setPassword('phantom-demo');
             setMode('encode');
             setHasInteracted(true);

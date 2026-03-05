@@ -1,7 +1,7 @@
 'use client';
 
 import { GlassCard } from '@/components/GlassCard';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import {
@@ -24,6 +24,68 @@ const fadeUp = {
         transition: { duration: 0.52, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay },
     }),
 };
+
+// ─── Reusable 3D Tilt Card ──────────────────────────────────────────────────
+
+interface TiltCardProps {
+    children: React.ReactNode;
+    className?: string;
+    glowColor?: string;
+    borderHoverColor?: string;
+    liftPixels?: number;
+}
+
+function TiltCard({ children, className = '', glowColor = 'rgba(255,255,255,0.1)', borderHoverColor = 'rgba(255,255,255,0.2)', liftPixels = -5 }: TiltCardProps) {
+    const x = useMotionValue(0.5);
+    const y = useMotionValue(0.5);
+    const springConfig = { damping: 25, stiffness: 200, mass: 0.5 };
+    const springX = useSpring(x, springConfig);
+    const springY = useSpring(y, springConfig);
+    const rotateX = useTransform(springY, [0, 1], [6, -6]);
+    const rotateY = useTransform(springX, [0, 1], [-6, 6]);
+    const glareX = useTransform(springX, [0, 1], ['-20%', '120%']);
+    const glareY = useTransform(springY, [0, 1], ['-20%', '120%']);
+    const glareOpacity = useTransform(springY, [0, 1], [0.12, 0]);
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        x.set((e.clientX - rect.left) / rect.width);
+        y.set((e.clientY - rect.top) / rect.height);
+    };
+    const handleMouseLeave = () => { x.set(0.5); y.set(0.5); };
+
+    return (
+        <motion.div
+            style={{ perspective: 1200 }}
+            className="w-full h-full"
+        >
+            <motion.div
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                style={{ rotateX, rotateY }}
+                className={`relative overflow-hidden cursor-default transition-colors ${className}`}
+                whileHover={{
+                    y: liftPixels,
+                    borderColor: borderHoverColor,
+                    boxShadow: `0 20px 50px -12px ${glowColor}`,
+                }}
+                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+            >
+                {/* Glare Overlay */}
+                <motion.div
+                    className="absolute inset-0 z-0 pointer-events-none rounded-[inherit]"
+                    style={{
+                        background: `radial-gradient(circle at ${glareX} ${glareY}, rgba(255,255,255,0.2) 0%, transparent 60%)`,
+                        opacity: glareOpacity
+                    }}
+                />
+                <div className="relative z-10 w-full h-full">
+                    {children}
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+}
 
 // ─── Interactive Demo ────────────────────────────────────────────────────────
 
@@ -267,10 +329,10 @@ export default function SecurityInfo() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                             {/* Phantom Card — hover lift + glow */}
-                            <motion.div
-                                className="bg-indigo-500/10 border border-indigo-500/20 rounded-3xl p-6 sm:p-8 space-y-6 cursor-default"
-                                whileHover={{ y: -5, boxShadow: '0 20px 50px -12px rgba(99,102,241,0.25)', borderColor: 'rgba(99,102,241,0.45)' }}
-                                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                            <TiltCard
+                                className="bg-indigo-500/10 border border-indigo-500/20 rounded-3xl p-6 sm:p-8 space-y-6"
+                                glowColor="rgba(99,102,241,0.25)"
+                                borderHoverColor="rgba(99,102,241,0.45)"
                             >
                                 <h3 className="text-xl font-bold text-indigo-300 flex items-center gap-2">
                                     <CheckCircle className="w-5 h-5 text-indigo-500" />
@@ -289,13 +351,13 @@ export default function SecurityInfo() {
                                         </div>
                                     ))}
                                 </div>
-                            </motion.div>
+                            </TiltCard>
 
                             {/* Mainstream Card — hover dim-lift */}
-                            <motion.div
-                                className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 opacity-80 cursor-default"
-                                whileHover={{ y: -5, opacity: 1, borderColor: 'rgba(255,255,255,0.15)' }}
-                                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                            <TiltCard
+                                className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 opacity-80"
+                                glowColor="rgba(255,255,255,0.05)"
+                                borderHoverColor="rgba(255,255,255,0.15)"
                             >
                                 <h3 className="text-xl font-bold text-gray-300 flex items-center gap-2">
                                     <Database className="w-5 h-5 text-gray-500" />
@@ -314,7 +376,7 @@ export default function SecurityInfo() {
                                         </div>
                                     ))}
                                 </div>
-                            </motion.div>
+                            </TiltCard>
                         </div>
                     </Section>
 
@@ -530,16 +592,16 @@ export default function SecurityInfo() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
 
                             {/* Protects card */}
-                            <motion.div
-                                className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-emerald-500/10 cursor-default"
-                                whileHover={{ y: -5, borderColor: 'rgba(52,211,153,0.45)', boxShadow: '0 20px 50px -12px rgba(52,211,153,0.18)' }}
-                                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                            <TiltCard
+                                className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-emerald-500/10"
+                                borderHoverColor="rgba(52,211,153,0.45)"
+                                glowColor="rgba(52,211,153,0.18)"
                             >
                                 <h3 className="text-lg font-bold text-emerald-400 flex items-center gap-2">
                                     <CheckCircle className="w-5 h-5 text-emerald-500" />
                                     What Phantom Protects
                                 </h3>
-                                <div className="space-y-3">
+                                <div className="space-y-3 relative z-20">
                                     {[
                                         { title: 'ISP / Network Snooping', sub: 'Traffic is encrypted locally. Network sees only random noise.' },
                                         { title: 'Cloud Storage Hacks', sub: 'Stolen Ciphertext means nothing without your Secret Key.' },
@@ -547,7 +609,7 @@ export default function SecurityInfo() {
                                         <motion.div
                                             key={item.title}
                                             className="bg-black/40 p-3 rounded-xl border border-white/5"
-                                            whileHover={{ borderColor: 'rgba(52,211,153,0.2)', x: 3 }}
+                                            whileHover={{ borderColor: 'rgba(52,211,153,0.4)', x: 3, backgroundColor: 'rgba(52,211,153,0.05)' }}
                                             transition={{ duration: 0.2 }}
                                         >
                                             <p className="text-sm font-bold text-emerald-300">{item.title}</p>
@@ -555,22 +617,22 @@ export default function SecurityInfo() {
                                         </motion.div>
                                     ))}
                                 </div>
-                            </motion.div>
+                            </TiltCard>
 
                             {/* Cannot protect card */}
-                            <motion.div
-                                className="bg-orange-500/10 border border-orange-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-orange-500/10 cursor-default"
-                                whileHover={{ y: -5, borderColor: 'rgba(251,146,60,0.45)', boxShadow: '0 20px 50px -12px rgba(251,146,60,0.18)' }}
-                                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                            <TiltCard
+                                className="bg-orange-500/10 border border-orange-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-orange-500/10"
+                                borderHoverColor="rgba(251,146,60,0.45)"
+                                glowColor="rgba(251,146,60,0.18)"
                             >
                                 <h3 className="text-lg font-bold text-orange-400 flex items-center gap-2">
                                     <ServerOff className="w-5 h-5 text-orange-500" />
                                     What It Cannot Protect
                                 </h3>
-                                <div className="space-y-3">
+                                <div className="space-y-3 relative z-20">
                                     <motion.div
                                         className="bg-black/40 p-3 rounded-xl border border-white/5"
-                                        whileHover={{ borderColor: 'rgba(251,146,60,0.2)', x: 3 }}
+                                        whileHover={{ borderColor: 'rgba(251,146,60,0.4)', x: 3, backgroundColor: 'rgba(251,146,60,0.05)' }}
                                         transition={{ duration: 0.2 }}
                                     >
                                         <p className="text-sm font-bold text-orange-300 mb-1">Local OS Keyloggers</p>
@@ -579,7 +641,7 @@ export default function SecurityInfo() {
                                     </motion.div>
                                     <motion.div
                                         className="bg-black/40 p-3 rounded-xl border border-white/5"
-                                        whileHover={{ borderColor: 'rgba(251,146,60,0.2)', x: 3 }}
+                                        whileHover={{ borderColor: 'rgba(251,146,60,0.4)', x: 3, backgroundColor: 'rgba(251,146,60,0.05)' }}
                                         transition={{ duration: 0.2 }}
                                     >
                                         <p className="text-sm font-bold text-orange-300 mb-1">Physical Coercion</p>
@@ -587,7 +649,7 @@ export default function SecurityInfo() {
                                         <p className="text-xs text-orange-400/70">Someone looking over your shoulder. Use Self-Destruct to minimize exposure window.</p>
                                     </motion.div>
                                 </div>
-                            </motion.div>
+                            </TiltCard>
                         </div>
                     </Section>
 
