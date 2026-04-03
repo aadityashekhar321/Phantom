@@ -667,14 +667,37 @@ export default function Home() {
         reader.onload = async (event) => {
           if (event.target?.result) {
             try {
-              // ALWAYS attempt to extract ciphertext first (Decode scenario)
-              const secret = await extractTextFromImage(event.target.result as string);
-              if (secret && (secret.startsWith('PHMX') || secret.startsWith('--- PHANTOM SECURE BLOCK'))) {
+              // 1. ALWAYS attempt to extract invisible LSB ciphertext first
+              let secret: string | null = null;
+              try {
+                secret = await extractTextFromImage(event.target.result as string);
+              } catch { }
+
+              // 2. Fallback: Check if the image contains a visible Phantom QR Code
+              if (!secret) {
+                 const img = new window.Image();
+                 await new Promise((res) => { img.onload = res; img.src = event.target!.result as string; });
+                 const canvas = document.createElement('canvas');
+                 canvas.width = img.width; canvas.height = img.height;
+                 const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                 if (ctx) {
+                   ctx.drawImage(img, 0, 0);
+                   const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                   const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+                   if (code && (code.data.startsWith('PHMX') || code.data.startsWith('--- PHANTOM'))) {
+                      secret = code.data;
+                   }
+                 }
+              }
+
+              if (secret && (secret.startsWith('PHMX') || secret.startsWith('--- PHANTOM'))) {
                 setText(secret);
                 setMode('decode');
                 toast.success('Hidden message found inside image! Set to Decode.');
                 setLoading(false);
                 return;
+              } else {
+                 throw new Error('No valid payload found');
               }
             } catch {
               // Not a stego image (no hidden payload).

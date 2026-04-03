@@ -149,12 +149,19 @@ async function renderCard(
     const qrY = H / 2 - qrSize / 2 - 10;
 
     try {
+        const len = ciphertext.length;
+        let ecl: 'H' | 'Q' | 'M' | 'L' = 'M';
+        if (len < 600) ecl = 'H';
+        else if (len < 1200) ecl = 'Q';
+        else if (len < 2000) ecl = 'M';
+        else ecl = 'L';
+
         const QRCode = (await import('qrcode')).default;
-        const qrDataUrl = await QRCode.toDataURL(ciphertext.slice(0, 400) || 'https://phantom.app', {
+        const qrDataUrl = await QRCode.toDataURL(ciphertext || 'https://phantom.app', {
             width: qrSize,
             margin: 0,
             color: { dark: '#FFFFFF', light: '#00000000' },
-            errorCorrectionLevel: 'M',
+            errorCorrectionLevel: ecl,
         });
         const img = new Image();
         await new Promise<void>((res) => { img.onload = () => res(); img.src = qrDataUrl; });
@@ -170,7 +177,12 @@ async function renderCard(
         ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
 
         // ── Phantom logo overlay in center of QR ──
-        const logoSize = qrSize * 0.22;
+        let ratio = 0.22;
+        if (ecl === 'Q') ratio = 0.18;
+        if (ecl === 'M') ratio = 0.14;
+        if (ecl === 'L') ratio = 0.08;
+
+        const logoSize = qrSize * ratio;
         const lx = qrX + qrSize / 2 - logoSize / 2;
         const ly = qrY + qrSize / 2 - logoSize / 2;
 
