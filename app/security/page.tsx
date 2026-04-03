@@ -601,7 +601,7 @@ export default function SecurityInfo() {
                                 transition={{ type: 'spring', stiffness: 300, damping: 18 }}
                             >
                                 <span className="text-white font-bold text-xl leading-none">P</span>
-                                <span className="text-[10px] font-bold opacity-60 text-white mt-1 uppercase tracking-widest">v1.0</span>
+                                <span className="text-[10px] font-bold opacity-60 text-white mt-1 uppercase tracking-widest">v2.4.0</span>
                             </motion.div>
                             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">The Phantom Mission</h2>
                             <p className="text-gray-300 text-lg font-medium leading-relaxed max-w-2xl">
