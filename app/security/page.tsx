@@ -1,12 +1,12 @@
 'use client';
 
 import { GlassCard } from '@/components/GlassCard';
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import {
     ChevronDown, Lock, Key, Shield, FileDigit, ServerOff,
-    Cpu, ArrowRight, Users, Database, Briefcase, Github, CheckCircle,
+    Cpu, Users, Database, Briefcase, Github, CheckCircle,
 } from 'lucide-react';
 import { useT } from '@/components/LanguageProvider';
 
@@ -24,68 +24,6 @@ const fadeUp = {
         transition: { duration: 0.52, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay },
     }),
 };
-
-// ─── Reusable 3D Tilt Card ──────────────────────────────────────────────────
-
-interface TiltCardProps {
-    children: React.ReactNode;
-    className?: string;
-    glowColor?: string;
-    borderHoverColor?: string;
-    liftPixels?: number;
-}
-
-function TiltCard({ children, className = '', glowColor = 'rgba(255,255,255,0.1)', borderHoverColor = 'rgba(255,255,255,0.2)', liftPixels = -5 }: TiltCardProps) {
-    const x = useMotionValue(0.5);
-    const y = useMotionValue(0.5);
-    const springConfig = { damping: 25, stiffness: 200, mass: 0.5 };
-    const springX = useSpring(x, springConfig);
-    const springY = useSpring(y, springConfig);
-    const rotateX = useTransform(springY, [0, 1], [6, -6]);
-    const rotateY = useTransform(springX, [0, 1], [-6, 6]);
-    const glareX = useTransform(springX, [0, 1], ['-20%', '120%']);
-    const glareY = useTransform(springY, [0, 1], ['-20%', '120%']);
-    const glareOpacity = useTransform(springY, [0, 1], [0.12, 0]);
-
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        x.set((e.clientX - rect.left) / rect.width);
-        y.set((e.clientY - rect.top) / rect.height);
-    };
-    const handleMouseLeave = () => { x.set(0.5); y.set(0.5); };
-
-    return (
-        <motion.div
-            style={{ perspective: 1200 }}
-            className="w-full h-full"
-        >
-            <motion.div
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                style={{ rotateX, rotateY }}
-                className={`relative overflow-hidden cursor-default transition-colors ${className}`}
-                whileHover={{
-                    y: liftPixels,
-                    borderColor: borderHoverColor,
-                    boxShadow: `0 20px 50px -12px ${glowColor}`,
-                }}
-                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-            >
-                {/* Glare Overlay */}
-                <motion.div
-                    className="absolute inset-0 z-0 pointer-events-none rounded-[inherit]"
-                    style={{
-                        background: `radial-gradient(circle at ${glareX} ${glareY}, rgba(255,255,255,0.2) 0%, transparent 60%)`,
-                        opacity: glareOpacity
-                    }}
-                />
-                <div className="relative z-10 w-full h-full">
-                    {children}
-                </div>
-            </motion.div>
-        </motion.div>
-    );
-}
 
 // ─── Interactive Demo ────────────────────────────────────────────────────────
 
@@ -173,27 +111,31 @@ function InteractiveDemoSteps() {
             </div>
 
             {/* Step detail card */}
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={activeStep}
-                    initial={{ opacity: 0, x: animating ? -10 : 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.22 }}
-                    className={`bg-black/50 border ${step.bg.split(' ')[1]} rounded-2xl p-5 sm:p-6 space-y-4`}
-                >
-                    <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl ${step.bg} flex items-center justify-center border`}>
-                            <Icon className={`w-5 h-5 ${step.color}`} />
+            <div style={{ perspective: '1000px' }}>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeStep}
+                        initial={{ opacity: 0, x: animating ? -10 : 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.22 }}
+                        whileHover={{ scale: 1.02, rotateX: 2, rotateY: -2, zIndex: 10, boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+                        className={`bg-black/50 border ${step.bg.split(' ')[1]} rounded-2xl p-5 sm:p-6 space-y-4`}
+                        style={{ transformStyle: 'preserve-3d' }}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl ${step.bg} flex items-center justify-center border`}>
+                                <Icon className={`w-5 h-5 ${step.color}`} />
+                            </div>
+                            <h3 className="text-base font-bold text-white">{step.title}</h3>
                         </div>
-                        <h3 className="text-base font-bold text-white">{step.title}</h3>
-                    </div>
-                    <p className="text-gray-300 text-sm leading-relaxed">{step.description}</p>
-                    <div className="bg-black/60 border border-white/5 rounded-xl p-3.5 font-mono text-xs text-emerald-300 break-all leading-relaxed">
-                        {step.output}
-                    </div>
-                </motion.div>
-            </AnimatePresence>
+                        <p className="text-gray-300 text-sm leading-relaxed">{step.description}</p>
+                        <div className="bg-black/60 border border-white/5 rounded-xl p-3.5 font-mono text-xs text-emerald-300 break-all leading-relaxed">
+                            {step.output}
+                        </div>
+                    </motion.div>
+                </AnimatePresence>
+            </div>
 
             {/* Prev / Next */}
             <div className="flex items-center justify-between pt-1">
@@ -230,6 +172,8 @@ const faqs = [
     { question: "What makes AES-256-GCM better than other encryption modes?", answer: "AES-256-GCM is an Authenticated Encryption with Associated Data (AEAD) cipher. Unlike AES-CBC, it simultaneously encrypts and authenticates the ciphertext using a 128-bit GCM authentication tag. This means any single-bit tampering of the ciphertext — by an attacker or file corruption — is detected mathematically before decryption even begins. You get both confidentiality and integrity in one cryptographic operation." },
     { question: "Why does Phantom use 100,000 PBKDF2 iterations?", answer: "PBKDF2 forces each password-guess attempt to repeat the same 100,000 SHA-256 hash computations. A modern GPU that could try 10¹³ raw SHA-256 guesses per second is reduced to roughly 10⁸ effective guesses per second after PBKDF2. Combined with the 2²⁵⁶ AES key space, this makes brute-force attacks computationally infeasible even against nation-state adversaries with GPU clusters." },
     { question: "Why does my Steganography image fail to decode on other platforms?", answer: "Platforms like WhatsApp, Twitter/X, Discord, and iMessage aggressively re-compress and re-encode images to reduce file sizes. This permanently destroys the LSB (Least Significant Bit) pixel data where the hidden message is stored. Always share steganography carrier images as raw Files — not photos — using platforms that preserve binary data losslessly: Signal ('Send as File'), Telegram ('Send as File'), or direct email attachments." },
+    { question: "What is Deniable Vault (Decoy Mode)?", answer: "Deniable Vault allows you to encode a harmless fake message alongside your real secret. If you are under physical duress and forced to reveal your password, you provide the 'Decoy Password', which decrypts the fake message while keeping the main secret mathematically hidden." },
+    { question: "How does the Self-Destruct Timer work offline?", answer: "The timer operates entirely in your browser's RAM. It simply clears the decrypted output from the UI automatically after the selected duration, preventing someone from reading it if they physically access your device later." },
     { question: "Is my encrypted data safe if Phantom's servers go down?", answer: "Yes, completely. Phantom has no servers. The application is a static client-side website. Your encrypted output is a self-contained string or .phantom file you hold locally. Even if the Phantom website ceased to exist tomorrow, the Web Crypto API used to decrypt your data is built into every modern browser — permanently and natively. You can decrypt your data with any browser, forever." },
     { question: "What is the difference between the Vault and Steganography tools?", answer: "The Vault tool encrypts plaintext or files into opaque ciphertext — the output is unreadable and obviously protected. Steganography hides a message inside an innocent-looking carrier image at the pixel level, so that no one looking at the image can tell a secret is present. For maximum security, combine both: encrypt your message in the Vault, then hide the ciphertext inside an image using Steganography. An attacker would need to detect the hidden channel and then break AES-256-GCM." },
     { question: "How do I install Phantom as an offline app?", answer: "Phantom is a Progressive Web App (PWA). On iOS: open in Safari → tap 'Share' → 'Add to Home Screen'. On Android: open in Chrome → menu → 'Add to Home Screen'. On Desktop Chrome or Edge: click the install icon in the address bar. Once installed, Phantom works 100% offline — no internet connection is ever required for cryptographic operations." },
@@ -329,10 +273,10 @@ export default function SecurityInfo() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                             {/* Phantom Card — hover lift + glow */}
-                            <TiltCard
-                                className="bg-indigo-500/10 border border-indigo-500/20 rounded-3xl p-6 sm:p-8 space-y-6"
-                                glowColor="rgba(99,102,241,0.25)"
-                                borderHoverColor="rgba(99,102,241,0.45)"
+                            <motion.div
+                                className="bg-indigo-500/10 border border-indigo-500/20 rounded-3xl p-6 sm:p-8 space-y-6 cursor-default"
+                                whileHover={{ y: -5, boxShadow: '0 20px 50px -12px rgba(99,102,241,0.25)', borderColor: 'rgba(99,102,241,0.45)' }}
+                                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
                             >
                                 <h3 className="text-xl font-bold text-indigo-300 flex items-center gap-2">
                                     <CheckCircle className="w-5 h-5 text-indigo-500" />
@@ -351,13 +295,13 @@ export default function SecurityInfo() {
                                         </div>
                                     ))}
                                 </div>
-                            </TiltCard>
+                            </motion.div>
 
                             {/* Mainstream Card — hover dim-lift */}
-                            <TiltCard
-                                className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 opacity-80"
-                                glowColor="rgba(255,255,255,0.05)"
-                                borderHoverColor="rgba(255,255,255,0.15)"
+                            <motion.div
+                                className="bg-white/[0.02] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 opacity-80 cursor-default"
+                                whileHover={{ y: -5, opacity: 1, borderColor: 'rgba(255,255,255,0.15)' }}
+                                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
                             >
                                 <h3 className="text-xl font-bold text-gray-300 flex items-center gap-2">
                                     <Database className="w-5 h-5 text-gray-500" />
@@ -376,11 +320,278 @@ export default function SecurityInfo() {
                                         </div>
                                     ))}
                                 </div>
-                            </TiltCard>
+                            </motion.div>
                         </div>
                     </Section>
 
-                    {/* ── 2. Phantom Mission + Use Cases ── */}
+                    {/* ── 2. Technical Specifications ── */}
+                    <Section delay={0.04} className="space-y-8 sm:space-y-10 border-t border-white/10 pt-4">
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 text-white">Technical Specifications</h2>
+                        <ul className="list-disc list-inside space-y-5 sm:space-y-6 text-gray-300 text-base leading-relaxed">
+                            <li><strong>Algorithm:</strong> AES-256 in GCM (Galois/Counter Mode) — authenticated encryption that simultaneously provides confidentiality and tamper-detection.</li>
+                            <li><strong>Key Size:</strong> 256-bit keys. At current compute speeds, a brute-force attack would require more energy than exists in the observable universe.</li>
+                            <li><strong>Key Derivation:</strong> PBKDF2 with SHA-256 — makes each attempt at guessing your password computationally expensive.</li>
+                            <li>
+                                <strong>Iterations:</strong>{' '}
+                                <span ref={iterRef} className="tabular-nums font-bold text-white">
+                                    {iterCount.toLocaleString()}
+                                </span>{' '}iterations. Each wrong password guess must repeat this entire process — making parallelized GPU attacks orders of magnitude slower.
+                            </li>
+                            <li><strong>Salt:</strong> 16 bytes, randomly generated per-message — ensures that identical passwords produce entirely different keys each time.</li>
+                            <li><strong>IV (Initialization Vector):</strong> 12 bytes, randomly generated per-message — guarantees that encrypting the same plaintext twice never produces the same ciphertext.</li>
+                        </ul>
+                    </Section>
+
+                    {/* ── 3. Cryptographic Pipeline ── */}
+                    <Section delay={0.04} className="space-y-8 sm:space-y-10">
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
+                            <Cpu className="w-6 h-6 text-red-400" />
+                            The Cryptographic Pipeline
+                        </h2>
+                        <div className="bg-black/40 border border-white/5 p-5 sm:p-8 rounded-3xl">
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-5 sm:gap-4">
+                                {pipelineSteps.map((step, idx) => {
+                                    const Icon = step.icon;
+                                    return (
+                                        <motion.div
+                                            key={step.label}
+                                            className="flex flex-col sm:flex-row items-center gap-4 sm:gap-0"
+                                            style={{ display: 'contents' }}
+                                        >
+                                            {/* Node */}
+                                            <motion.div
+                                                className="group flex flex-col items-center text-center space-y-2 w-full sm:w-auto relative"
+                                                initial={{ opacity: 0, y: 16 }}
+                                                whileInView={{ opacity: 1, y: 0 }}
+                                                viewport={VP}
+                                                transition={{ duration: 0.4, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+                                            >
+                                                {/* Desktop tooltip */}
+                                                <div className="absolute -top-12 left-1/2 -translate-x-1/2 hidden sm:block opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-50 pointer-events-none">
+                                                    <div className="bg-black/90 border border-white/20 text-xs text-gray-300 px-3 py-1.5 rounded-lg whitespace-nowrap">
+                                                        {step.tooltip}
+                                                    </div>
+                                                </div>
+                                                <motion.div
+                                                    className={`w-12 h-12 rounded-xl border flex items-center justify-center ${step.color}`}
+                                                    whileHover={{ scale: 1.18, y: -3 }}
+                                                    transition={{ type: 'spring', stiffness: 340, damping: 20 }}
+                                                >
+                                                    <Icon className="w-6 h-6" />
+                                                </motion.div>
+                                                <div className="text-xs font-bold text-white uppercase tracking-wider">{step.label}</div>
+                                                <div className="text-[10px] text-gray-500">{step.sub}</div>
+                                            </motion.div>
+                                            {/* Arrow */}
+                                            {idx < pipelineSteps.length - 1 && (
+                                                <div className="hidden sm:flex relative items-center justify-center w-12 flex-shrink-0">
+                                                    <motion.div
+                                                        initial={{ scaleX: 0 }}
+                                                        whileInView={{ scaleX: 1 }}
+                                                        viewport={VP}
+                                                        transition={{ duration: 0.35, delay: idx * 0.1 + 0.12 }}
+                                                        className="w-full h-0.5 bg-red-500/20 absolute"
+                                                        style={{ originX: 0 }}
+                                                    />
+                                                    <motion.div
+                                                        animate={{ x: [0, 48] }}
+                                                        transition={{ duration: 1.5, repeat: Infinity, ease: 'linear', delay: idx * 0.5 }}
+                                                        className="w-2 h-2 rounded-full bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.8)] absolute left-0"
+                                                    />
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                            <p className="text-center text-xs text-gray-600 mt-5 sm:hidden">Raw Data → PBKDF2 → AES-256-GCM → Ciphertext</p>
+                        </div>
+                    </Section>
+
+                    {/* ── 4. Interactive Security Demo ── */}
+                    <Section delay={0.04} className="space-y-6 pt-4 border-t border-white/10">
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
+                            <Cpu className="w-6 h-6 text-red-400" />
+                            Interactive Security Demo
+                        </h2>
+                        <p className="text-gray-400 text-sm leading-relaxed">
+                            Step through the AES-256-GCM pipeline to see exactly how your message is transformed.
+                        </p>
+                        <InteractiveDemoSteps />
+                    </Section>
+
+                    {/* ── 5. Verified by Math ── */}
+                    <Section delay={0.04} className="space-y-6 pt-4 border-t border-white/10 mt-4">
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
+                            <Shield className="w-6 h-6 text-indigo-400" />
+                            Verified by Math
+                        </h2>
+                        <p className="text-gray-400 text-sm leading-relaxed">
+                            Security is not a claim — it is a provable property. Here is what the mathematics guarantees:
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {[
+                                { label: 'Brute-force search space', value: '2²⁵⁶', sub: '≈ 1.16 × 10⁷⁷ possible keys', note: 'More than the number of atoms in the observable universe.', color: 'text-indigo-300', glow: 'rgba(99,102,241,0.25)' },
+                                { label: 'GPU guesses per second', value: '~10¹³', sub: 'PBKDF2 reduces GPU throughput to ~10⁵', note: 'Each guess requires 100,000 hash iterations.', color: 'text-violet-300', glow: 'rgba(139,92,246,0.25)' },
+                                { label: 'Time to brute-force', value: '≫ 10⁵⁴ years', sub: 'Universe age: 1.38 × 10¹⁰ years', note: 'Even with all the energy in the universe.', color: 'text-cyan-300', glow: 'rgba(34,211,238,0.25)' },
+                                { label: 'Authentication guarantee', value: 'GCM Tag', sub: '128-bit authentication tag per message', note: 'Tampered ciphertext is detected before decryption.', color: 'text-emerald-300', glow: 'rgba(52,211,153,0.25)' },
+                            ].map((item, i) => (
+                                <motion.div
+                                    key={item.label}
+                                    className="bg-black/40 border border-white/5 p-5 rounded-2xl space-y-1.5 cursor-default"
+                                    initial="hidden"
+                                    whileInView="visible"
+                                    viewport={VP}
+                                    variants={fadeUp}
+                                    custom={i * 0.07}
+                                    whileHover={{ y: -4, borderColor: item.glow.replace('0.25)', '0.5)'), boxShadow: `0 12px 32px -8px ${item.glow}` }}
+                                    transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                                >
+                                    <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">{item.label}</p>
+                                    <p className={`text-2xl font-mono font-bold ${item.color}`}>{item.value}</p>
+                                    <p className="text-xs text-gray-400 font-mono">{item.sub}</p>
+                                    <p className="text-xs text-gray-600 leading-relaxed">{item.note}</p>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </Section>
+
+                    {/* ── 6. Privacy Threat Model ── */}
+                    <Section delay={0.04} className="space-y-8 sm:space-y-10 pt-4">
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
+                            <Shield className="w-6 h-6 text-orange-400" />
+                            Privacy Threat Model
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+                            {/* Protects card */}
+                            <motion.div
+                                className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-emerald-500/10 cursor-default"
+                                whileHover={{ y: -5, borderColor: 'rgba(52,211,153,0.45)', boxShadow: '0 20px 50px -12px rgba(52,211,153,0.18)' }}
+                                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                            >
+                                <h3 className="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                                    <CheckCircle className="w-5 h-5 text-emerald-500" />
+                                    What Phantom Protects
+                                </h3>
+                                <div className="space-y-3">
+                                    {[
+                                        { title: 'ISP / Network Snooping', sub: 'Traffic is encrypted locally. Network sees only random noise.' },
+                                        { title: 'Cloud Storage Hacks', sub: 'Stolen Ciphertext means nothing without your Secret Key.' },
+                                    ].map(item => (
+                                        <motion.div
+                                            key={item.title}
+                                            className="bg-black/40 p-3 rounded-xl border border-white/5"
+                                            whileHover={{ borderColor: 'rgba(52,211,153,0.2)', x: 3 }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            <p className="text-sm font-bold text-emerald-300">{item.title}</p>
+                                            <p className="text-xs text-emerald-400/70 mt-1">{item.sub}</p>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </motion.div>
+
+                            {/* Cannot protect card */}
+                            <motion.div
+                                className="bg-orange-500/10 border border-orange-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-orange-500/10 cursor-default"
+                                whileHover={{ y: -5, borderColor: 'rgba(251,146,60,0.45)', boxShadow: '0 20px 50px -12px rgba(251,146,60,0.18)' }}
+                                transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                            >
+                                <h3 className="text-lg font-bold text-orange-400 flex items-center gap-2">
+                                    <ServerOff className="w-5 h-5 text-orange-500" />
+                                    What It Cannot Protect
+                                </h3>
+                                <div className="space-y-3">
+                                    <motion.div
+                                        className="bg-black/40 p-3 rounded-xl border border-white/5"
+                                        whileHover={{ borderColor: 'rgba(251,146,60,0.2)', x: 3 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <p className="text-sm font-bold text-orange-300 mb-1">Local OS Keyloggers</p>
+                                        <span className="text-[10px] uppercase font-bold tracking-widest bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full inline-block mb-1">Hardware Level</span>
+                                        <p className="text-xs text-orange-400/70">Browser software cannot stop OS-level keyloggers.</p>
+                                    </motion.div>
+                                    <motion.div
+                                        className="bg-black/40 p-3 rounded-xl border border-white/5"
+                                        whileHover={{ borderColor: 'rgba(251,146,60,0.2)', x: 3 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <p className="text-sm font-bold text-orange-300 mb-1">Physical Coercion</p>
+                                        <span className="text-[10px] uppercase font-bold tracking-widest bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full inline-block mb-1">Mitigated by Decoy Mode</span>
+                                        <p className="text-xs text-orange-400/70">Someone looking over your shoulder. Use Self-Destruct to minimize exposure window.</p>
+                                    </motion.div>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </Section>
+
+                    {/* ── 7. Important Warnings ── */}
+                    <Section delay={0.04} className="space-y-8 sm:space-y-10 border-t border-white/10 pt-4">
+                        <h2 className="text-xl sm:text-2xl font-bold text-red-300 border-b border-white/10 pb-6">Important Warnings</h2>
+                        <motion.div
+                            className="bg-red-500/10 border border-red-500/20 p-6 sm:p-10 rounded-3xl space-y-6"
+                            whileHover={{ borderColor: 'rgba(239,68,68,0.4)', boxShadow: '0 0 0 4px rgba(239,68,68,0.06)' }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            <p className="text-red-200 text-base leading-relaxed">
+                                <strong>1. Lost passwords cannot be recovered.</strong><br />
+                                Phantom is zero-knowledge locally executing software. There is no backend password reset feature.
+                            </p>
+                            <p className="text-red-200 text-base leading-relaxed">
+                                <strong>2. No browser storage.</strong><br />
+                                Everything is stored temporarily in RAM. The keys and plaintexts are cleared when the session closes.
+                            </p>
+                        </motion.div>
+                    </Section>
+
+                    {/* ── 8. Zero-Knowledge FAQ ── */}
+                    <Section delay={0.04} className="space-y-8 sm:space-y-10 pt-4 border-t border-white/10">
+                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
+                            <ServerOff className="w-6 h-6 text-gray-400" />
+                            Zero-Knowledge FAQ
+                        </h2>
+                        <div className="space-y-3">
+                            {faqs.map((faq, idx) => (
+                                <motion.div
+                                    key={idx}
+                                    className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden"
+                                    whileHover={{ borderColor: 'rgba(255,255,255,0.1)' }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <button
+                                        onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                                        className="w-full flex items-center justify-between p-5 text-left focus:outline-none active:bg-white/[0.04]"
+                                    >
+                                        <span className="font-semibold text-gray-200 pr-4">{faq.question}</span>
+                                        <motion.span
+                                            animate={{ rotate: openFaq === idx ? 180 : 0 }}
+                                            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+                                            className="flex-shrink-0"
+                                        >
+                                            <ChevronDown className="w-5 h-5 text-gray-400" />
+                                        </motion.span>
+                                    </button>
+                                    <AnimatePresence initial={false}>
+                                        {openFaq === idx && (
+                                            <motion.div
+                                                key="answer"
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+                                                className="overflow-hidden"
+                                            >
+                                                <p className="px-5 pb-5 text-gray-400 text-sm leading-relaxed">{faq.answer}</p>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </Section>
+
+                    {/* ── 9. Phantom Mission + Use Cases ── */}
                     <Section delay={0.05} className="space-y-8 sm:space-y-10 pt-4 border-t border-white/10">
                         {/* Mission badge */}
                         <div className="flex flex-col items-center text-center pb-4 pt-4">
@@ -437,280 +648,19 @@ export default function SecurityInfo() {
                         </div>
                     </Section>
 
-                    {/* ── 3. Technical Specifications ── */}
-                    <Section delay={0.04} className="space-y-8 sm:space-y-10 border-t border-white/10 pt-4">
-                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 text-white">Technical Specifications</h2>
-                        <ul className="list-disc list-inside space-y-5 sm:space-y-6 text-gray-300 text-base leading-relaxed">
-                            <li><strong>Algorithm:</strong> AES-256 in GCM (Galois/Counter Mode) — authenticated encryption that simultaneously provides confidentiality and tamper-detection.</li>
-                            <li><strong>Key Size:</strong> 256-bit keys. At current compute speeds, a brute-force attack would require more energy than exists in the observable universe.</li>
-                            <li><strong>Key Derivation:</strong> PBKDF2 with SHA-256 — makes each attempt at guessing your password computationally expensive.</li>
-                            <li>
-                                <strong>Iterations:</strong>{' '}
-                                <span ref={iterRef} className="tabular-nums font-bold text-white">
-                                    {iterCount.toLocaleString()}
-                                </span>{' '}iterations. Each wrong password guess must repeat this entire process — making parallelized GPU attacks orders of magnitude slower.
-                            </li>
-                            <li><strong>Salt:</strong> 16 bytes, randomly generated per-message — ensures that identical passwords produce entirely different keys each time.</li>
-                            <li><strong>IV (Initialization Vector):</strong> 12 bytes, randomly generated per-message — guarantees that encrypting the same plaintext twice never produces the same ciphertext.</li>
-                        </ul>
-                    </Section>
-
-                    {/* ── 4. Cryptographic Pipeline ── */}
-                    <Section delay={0.04} className="space-y-8 sm:space-y-10">
-                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
-                            <Cpu className="w-6 h-6 text-red-400" />
-                            The Cryptographic Pipeline
-                        </h2>
-                        <div className="bg-black/40 border border-white/5 p-5 sm:p-8 rounded-3xl">
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-5 sm:gap-4">
-                                {pipelineSteps.map((step, idx) => {
-                                    const Icon = step.icon;
-                                    return (
-                                        <motion.div
-                                            key={step.label}
-                                            className="flex flex-col sm:flex-row items-center gap-4 sm:gap-0"
-                                            style={{ display: 'contents' }}
-                                        >
-                                            {/* Node */}
-                                            <motion.div
-                                                className="group flex flex-col items-center text-center space-y-2 w-full sm:w-auto relative"
-                                                initial={{ opacity: 0, y: 16 }}
-                                                whileInView={{ opacity: 1, y: 0 }}
-                                                viewport={VP}
-                                                transition={{ duration: 0.4, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
-                                            >
-                                                {/* Desktop tooltip */}
-                                                <div className="absolute -top-12 left-1/2 -translate-x-1/2 hidden sm:block opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-200 z-50 pointer-events-none">
-                                                    <div className="bg-black/90 border border-white/20 text-xs text-gray-300 px-3 py-1.5 rounded-lg whitespace-nowrap">
-                                                        {step.tooltip}
-                                                    </div>
-                                                </div>
-                                                <motion.div
-                                                    className={`w-12 h-12 rounded-xl border flex items-center justify-center ${step.color}`}
-                                                    whileHover={{ scale: 1.18, y: -3 }}
-                                                    transition={{ type: 'spring', stiffness: 340, damping: 20 }}
-                                                >
-                                                    <Icon className="w-6 h-6" />
-                                                </motion.div>
-                                                <div className="text-xs font-bold text-white uppercase tracking-wider">{step.label}</div>
-                                                <div className="text-[10px] text-gray-500">{step.sub}</div>
-                                            </motion.div>
-                                            {/* Arrow */}
-                                            {idx < pipelineSteps.length - 1 && (
-                                                <motion.span
-                                                    initial={{ opacity: 0, scaleX: 0 }}
-                                                    whileInView={{ opacity: 1, scaleX: 1 }}
-                                                    viewport={VP}
-                                                    transition={{ duration: 0.35, delay: idx * 0.1 + 0.12 }}
-                                                    className="hidden sm:block flex-shrink-0"
-                                                    style={{ originX: 0 }}
-                                                >
-                                                    <ArrowRight className="w-5 h-5 text-red-500/40" />
-                                                </motion.span>
-                                            )}
-                                        </motion.div>
-                                    );
-                                })}
-                            </div>
-                            <p className="text-center text-xs text-gray-600 mt-5 sm:hidden">Raw Data → PBKDF2 → AES-256-GCM → Ciphertext</p>
-                        </div>
-                    </Section>
-
-                    {/* ── 5. Interactive Security Demo ── */}
-                    <Section delay={0.04} className="space-y-6 pt-4 border-t border-white/10">
-                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
-                            <Cpu className="w-6 h-6 text-red-400" />
-                            Interactive Security Demo
-                        </h2>
-                        <p className="text-gray-400 text-sm leading-relaxed">
-                            Step through the AES-256-GCM pipeline to see exactly how your message is transformed.
-                        </p>
-                        <InteractiveDemoSteps />
-                    </Section>
-
-                    {/* ── 6. Verified by Math ── */}
-                    <Section delay={0.04} className="space-y-6 pt-4 border-t border-white/10 mt-4">
-                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
-                            <Shield className="w-6 h-6 text-indigo-400" />
-                            Verified by Math
-                        </h2>
-                        <p className="text-gray-400 text-sm leading-relaxed">
-                            Security is not a claim — it is a provable property. Here is what the mathematics guarantees:
-                        </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {[
-                                { label: 'Brute-force search space', value: '2²⁵⁶', sub: '≈ 1.16 × 10⁷⁷ possible keys', note: 'More than the number of atoms in the observable universe.', color: 'text-indigo-300' },
-                                { label: 'GPU guesses per second', value: '~10¹³', sub: 'PBKDF2 reduces GPU throughput to ~10⁵', note: 'Each guess requires 100,000 hash iterations.', color: 'text-violet-300' },
-                                { label: 'Time to brute-force', value: '≫ 10⁵⁴ years', sub: 'Universe age: 1.38 × 10¹⁰ years', note: 'Even with all the energy in the universe.', color: 'text-cyan-300' },
-                                { label: 'Authentication guarantee', value: 'GCM Tag', sub: '128-bit authentication tag per message', note: 'Tampered ciphertext is detected before decryption.', color: 'text-emerald-300' },
-                            ].map((item, i) => (
-                                <motion.div
-                                    key={item.label}
-                                    className="bg-black/40 border border-white/5 p-5 rounded-2xl space-y-1.5 cursor-default"
-                                    initial="hidden"
-                                    whileInView="visible"
-                                    viewport={VP}
-                                    variants={fadeUp}
-                                    custom={i * 0.07}
-                                    whileHover={{ y: -4, borderColor: 'rgba(255,255,255,0.12)', boxShadow: '0 12px 32px -8px rgba(0,0,0,0.5)' }}
-                                    transition={{ type: 'spring', stiffness: 300, damping: 22 }}
-                                >
-                                    <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">{item.label}</p>
-                                    <p className={`text-2xl font-mono font-bold ${item.color}`}>{item.value}</p>
-                                    <p className="text-xs text-gray-400 font-mono">{item.sub}</p>
-                                    <p className="text-xs text-gray-600 leading-relaxed">{item.note}</p>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </Section>
-
-                    {/* ── 7. Important Warnings ── */}
-                    <Section delay={0.04} className="space-y-8 sm:space-y-10 border-t border-white/10 pt-4">
-                        <h2 className="text-xl sm:text-2xl font-bold text-red-300 border-b border-white/10 pb-6">Important Warnings</h2>
-                        <motion.div
-                            className="bg-red-500/10 border border-red-500/20 p-6 sm:p-10 rounded-3xl space-y-6"
-                            whileHover={{ borderColor: 'rgba(239,68,68,0.4)', boxShadow: '0 0 0 4px rgba(239,68,68,0.06)' }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            <p className="text-red-200 text-base leading-relaxed">
-                                <strong>1. Lost passwords cannot be recovered.</strong><br />
-                                Phantom is zero-knowledge locally executing software. There is no backend password reset feature.
-                            </p>
-                            <p className="text-red-200 text-base leading-relaxed">
-                                <strong>2. No browser storage.</strong><br />
-                                Everything is stored temporarily in RAM. The keys and plaintexts are cleared when the session closes.
-                            </p>
-                        </motion.div>
-                    </Section>
-
-                    {/* ── 8. Privacy Threat Model ── */}
-                    <Section delay={0.04} className="space-y-8 sm:space-y-10 pt-4">
-                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
-                            <Shield className="w-6 h-6 text-orange-400" />
-                            Privacy Threat Model
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-
-                            {/* Protects card */}
-                            <TiltCard
-                                className="bg-emerald-500/10 border border-emerald-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-emerald-500/10"
-                                borderHoverColor="rgba(52,211,153,0.45)"
-                                glowColor="rgba(52,211,153,0.18)"
-                            >
-                                <h3 className="text-lg font-bold text-emerald-400 flex items-center gap-2">
-                                    <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                    What Phantom Protects
-                                </h3>
-                                <div className="space-y-3 relative z-20">
-                                    {[
-                                        { title: 'ISP / Network Snooping', sub: 'Traffic is encrypted locally. Network sees only random noise.' },
-                                        { title: 'Cloud Storage Hacks', sub: 'Stolen Ciphertext means nothing without your Secret Key.' },
-                                    ].map(item => (
-                                        <motion.div
-                                            key={item.title}
-                                            className="bg-black/40 p-3 rounded-xl border border-white/5"
-                                            whileHover={{ borderColor: 'rgba(52,211,153,0.4)', x: 3, backgroundColor: 'rgba(52,211,153,0.05)' }}
-                                            transition={{ duration: 0.2 }}
-                                        >
-                                            <p className="text-sm font-bold text-emerald-300">{item.title}</p>
-                                            <p className="text-xs text-emerald-400/70 mt-1">{item.sub}</p>
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            </TiltCard>
-
-                            {/* Cannot protect card */}
-                            <TiltCard
-                                className="bg-orange-500/10 border border-orange-500/20 rounded-3xl p-6 space-y-4 shadow-inner shadow-orange-500/10"
-                                borderHoverColor="rgba(251,146,60,0.45)"
-                                glowColor="rgba(251,146,60,0.18)"
-                            >
-                                <h3 className="text-lg font-bold text-orange-400 flex items-center gap-2">
-                                    <ServerOff className="w-5 h-5 text-orange-500" />
-                                    What It Cannot Protect
-                                </h3>
-                                <div className="space-y-3 relative z-20">
-                                    <motion.div
-                                        className="bg-black/40 p-3 rounded-xl border border-white/5"
-                                        whileHover={{ borderColor: 'rgba(251,146,60,0.4)', x: 3, backgroundColor: 'rgba(251,146,60,0.05)' }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <p className="text-sm font-bold text-orange-300 mb-1">Local OS Keyloggers</p>
-                                        <span className="text-[10px] uppercase font-bold tracking-widest bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full inline-block mb-1">Hardware Level</span>
-                                        <p className="text-xs text-orange-400/70">Browser software cannot stop OS-level keyloggers.</p>
-                                    </motion.div>
-                                    <motion.div
-                                        className="bg-black/40 p-3 rounded-xl border border-white/5"
-                                        whileHover={{ borderColor: 'rgba(251,146,60,0.4)', x: 3, backgroundColor: 'rgba(251,146,60,0.05)' }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <p className="text-sm font-bold text-orange-300 mb-1">Physical Coercion</p>
-                                        <span className="text-[10px] uppercase font-bold tracking-widest bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full inline-block mb-1">Mitigated by Decoy Mode</span>
-                                        <p className="text-xs text-orange-400/70">Someone looking over your shoulder. Use Self-Destruct to minimize exposure window.</p>
-                                    </motion.div>
-                                </div>
-                            </TiltCard>
-                        </div>
-                    </Section>
-
-                    {/* ── 9. Zero-Knowledge FAQ ── */}
-                    <Section delay={0.04} className="space-y-8 sm:space-y-10 pt-4 border-t border-white/10">
-                        <h2 className="text-xl sm:text-2xl font-bold border-b border-white/10 pb-6 flex items-center gap-2">
-                            <ServerOff className="w-6 h-6 text-gray-400" />
-                            Zero-Knowledge FAQ
-                        </h2>
-                        <div className="space-y-3">
-                            {faqs.map((faq, idx) => (
-                                <motion.div
-                                    key={idx}
-                                    className="bg-white/[0.03] border border-white/5 rounded-2xl overflow-hidden"
-                                    whileHover={{ borderColor: 'rgba(255,255,255,0.1)' }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    <button
-                                        onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                                        className="w-full flex items-center justify-between p-5 text-left focus:outline-none active:bg-white/[0.04]"
-                                    >
-                                        <span className="font-semibold text-gray-200 pr-4">{faq.question}</span>
-                                        <motion.span
-                                            animate={{ rotate: openFaq === idx ? 180 : 0 }}
-                                            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
-                                            className="flex-shrink-0"
-                                        >
-                                            <ChevronDown className="w-5 h-5 text-gray-400" />
-                                        </motion.span>
-                                    </button>
-                                    <AnimatePresence initial={false}>
-                                        {openFaq === idx && (
-                                            <motion.div
-                                                key="answer"
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: 'auto', opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
-                                                className="overflow-hidden"
-                                            >
-                                                <p className="px-5 pb-5 text-gray-400 text-sm leading-relaxed">{faq.answer}</p>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </Section>
-
                     {/* ── 10. GitHub CTA ── */}
                     <Section delay={0.04} className="pt-6 border-t border-white/10 text-center">
                         <motion.a
                             href="https://github.com/aadityashekhar321/Phantom"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl font-medium text-gray-300"
-                            whileHover={{ scale: 1.04, backgroundColor: 'rgba(255,255,255,0.09)', borderColor: 'rgba(255,255,255,0.2)', color: '#ffffff' }}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl font-medium text-gray-300 relative overflow-hidden group"
+                            whileHover={{ scale: 1.04, backgroundColor: 'rgba(255,255,255,0.09)', borderColor: 'rgba(255,255,255,0.2)', color: '#ffffff', boxShadow: '0 0 20px rgba(255,255,255,0.1)' }}
                             whileTap={{ scale: 0.97 }}
                             transition={{ type: 'spring', stiffness: 340, damping: 22 }}
                         >
-                            <Github className="w-5 h-5" /> View Open Source Engine on GitHub
+                            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-[150%] group-hover:animate-[shimmer_1.5s_infinite]" />
+                            <Github className="w-5 h-5 relative z-10" /> <span className="relative z-10">View Open Source Engine on GitHub</span>
                         </motion.a>
                     </Section>
 

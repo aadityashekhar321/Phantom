@@ -79,6 +79,9 @@ function StepCard({
                 style={{ rotateX, rotateY }}
                 className="transform-gpu bg-black/50 border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-start gap-6 relative overflow-hidden group hover:border-white/20 transition-colors"
             >
+                {/* Light Sweep Effect */}
+                <span className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/[0.07] to-transparent -translate-x-[150%] group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none z-0" />
+
                 {/* Glare */}
                 <motion.div
                     className="absolute inset-0 z-0 pointer-events-none rounded-3xl"
@@ -371,9 +374,10 @@ export default function HowItWorks() {
                 <div className="mt-12 space-y-4 md:space-y-0">
 
                     {/* Mobile Card View */}
-                    <div className="md:hidden space-y-3">
+                    <div className="md:hidden space-y-4">
                         {[
                             {
+                                icon: Sparkles,
                                 mode: 'Steganography',
                                 color: 'text-indigo-400',
                                 border: 'border-indigo-500/20',
@@ -384,6 +388,7 @@ export default function HowItWorks() {
                                 delay: 0,
                             },
                             {
+                                icon: Lock,
                                 mode: 'Full Encryption',
                                 color: 'text-cyan-400',
                                 border: 'border-cyan-500/20',
@@ -393,24 +398,42 @@ export default function HowItWorks() {
                                 best: 'Archiving or locking images completely',
                                 delay: 0.08,
                             },
-                        ].map(row => (
-                            <motion.div
-                                key={row.mode}
-                                className={`rounded-2xl border ${row.border} ${row.bg} p-4 space-y-2`}
-                                initial={{ opacity: 0, y: 16 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={vp}
-                                transition={{ duration: 0.4, delay: row.delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
-                                whileHover={{ scale: 1.02 }}
-                            >
-                                <p className={`font-bold text-base ${row.color}`}>{row.mode}</p>
-                                <div className="text-sm text-gray-400 space-y-1.5">
-                                    <p><span className="text-gray-500 font-semibold">Method: </span>{row.how}</p>
-                                    <p><span className="text-gray-500 font-semibold">Output: </span>{row.visual}</p>
-                                    <p><span className="text-gray-500 font-semibold">Best for: </span>{row.best}</p>
-                                </div>
-                            </motion.div>
-                        ))}
+                        ].map(row => {
+                            const Icon = row.icon;
+                            return (
+                                <motion.div
+                                    key={row.mode}
+                                    className={`rounded-3xl border ${row.border} ${row.bg} p-5 space-y-4 relative overflow-hidden group`}
+                                    initial={{ opacity: 0, y: 16 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={vp}
+                                    transition={{ duration: 0.4, delay: row.delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+                                    whileHover={{ scale: 1.02 }}
+                                >
+                                    <span className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-[150%] group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none z-0" />
+                                    <div className="flex items-center gap-3 relative z-10">
+                                        <div className={`p-2.5 rounded-xl border ${row.border} bg-black/40`}>
+                                            <Icon className={`w-5 h-5 ${row.color}`} />
+                                        </div>
+                                        <p className={`font-bold text-lg ${row.color}`}>{row.mode}</p>
+                                    </div>
+                                    <div className="text-[13px] text-gray-400 space-y-2 relative z-10 bg-black/20 p-4 rounded-2xl border border-white/5">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-gray-500 font-bold uppercase tracking-wider text-[10px]">Method</span>
+                                            <span className="text-gray-300">{row.how}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1 pt-2 border-t border-white/5">
+                                            <span className="text-gray-500 font-bold uppercase tracking-wider text-[10px]">Output</span>
+                                            <span className="text-gray-300">{row.visual}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1 pt-2 border-t border-white/5">
+                                            <span className="text-gray-500 font-bold uppercase tracking-wider text-[10px]">Best for</span>
+                                            <span className="text-emerald-400 font-medium">{row.best}</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )
+                        })}
                     </div>
 
                     {/* Desktop Table View */}
