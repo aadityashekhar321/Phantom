@@ -19,9 +19,23 @@ interface Note {
 
 function generatePassword(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    const arr = new Uint8Array(18);
-    crypto.getRandomValues(arr);
-    return Array.from(arr, (b) => chars[b % chars.length]).join('');
+    const targetLength = 18;
+    const maxRandomByte = Math.floor(256 / chars.length) * chars.length;
+    const generated: string[] = [];
+
+    while (generated.length < targetLength) {
+        const chunk = new Uint8Array(targetLength);
+        crypto.getRandomValues(chunk);
+
+        for (let index = 0; index < chunk.length; index++) {
+            const value = chunk[index];
+            if (value >= maxRandomByte) continue;
+            generated.push(chars[value % chars.length]);
+            if (generated.length === targetLength) break;
+        }
+    }
+
+    return generated.join('');
 }
 
 export default function NotesPage() {

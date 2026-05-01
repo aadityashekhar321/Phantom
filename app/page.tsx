@@ -321,9 +321,23 @@ export default function Home() {
   // Password Generator
   const generatePassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    const arr = new Uint8Array(20);
-    crypto.getRandomValues(arr);
-    const gen = Array.from(arr, (b) => chars[b % chars.length]).join('');
+    const genLength = 20;
+    const maxRandomByte = Math.floor(256 / chars.length) * chars.length;
+    const generated: string[] = [];
+
+    while (generated.length < genLength) {
+      const chunk = new Uint8Array(genLength);
+      crypto.getRandomValues(chunk);
+
+      for (let index = 0; index < chunk.length; index++) {
+        const value = chunk[index];
+        if (value >= maxRandomByte) continue;
+        generated.push(chars[value % chars.length]);
+        if (generated.length === genLength) break;
+      }
+    }
+
+    const gen = generated.join('');
     setPassword(gen);
     setPasswordStrength(100);
     setShowPassword(true);
@@ -553,12 +567,19 @@ export default function Home() {
 
   const generateShareLink = () => {
     if (!output) return;
+    const encodedOutput = encodeURIComponent(output);
+
+    if (encodedOutput.length > 1800) {
+      toast.error('This payload is too large for a share link. Export it as a .phantom file instead.');
+      return;
+    }
+
     let expMs = '';
     if (shareExpiry !== 'none') {
       const durations: Record<string, number> = { '1h': 3600000, '24h': 86400000, '7d': 604800000 };
       expMs = `&exp=${Date.now() + durations[shareExpiry]}`;
     }
-    const url = `${window.location.origin}/#data=${encodeURIComponent(output)}${expMs}`;
+    const url = `${window.location.origin}/#data=${encodedOutput}${expMs}`;
     navigator.clipboard.writeText(url);
     triggerHaptic();
     const label = shareExpiry === 'none' ? 'no expiry' : `expires in ${shareExpiry}`;

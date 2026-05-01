@@ -7,9 +7,21 @@ import { useT } from '@/components/LanguageProvider';
 
 const changelog = [
     {
+        version: 'v2.5.0',
+        date: '2026-05-01',
+        tag: 'latest',
+        changes: [
+            { type: 'fix', text: 'Removed the analytics dependency so the app matches its zero-telemetry and no-network claims' },
+            { type: 'fix', text: 'Fixed locale hydration so stored language preferences update the document language consistently' },
+            { type: 'fix', text: 'Restored a browser-safe rounded-rectangle helper for QR steganography rendering' },
+            { type: 'fix', text: 'Reworked password generation to avoid modulo bias in both Vault and Notes generators' },
+            { type: 'fix', text: 'Added a share-link size guard to prevent brittle oversized URL hashes' },
+        ],
+    },
+    {
         version: 'v2.4.0',
         date: '2026-03-04',
-        tag: 'latest',
+        tag: '',
         changes: [
             { type: 'feat', text: 'Immersive Identity Cards — upgraded card previews with 3D physical-tilt physics, dynamic ambient shadows, and mouse-tracking glossy glare overlays' },
             { type: 'feat', text: 'QR Branding & Verification — embedded the Phantom "P" logo natively into the QR matrix and added an auto-generated "ISSUED: YYYY-MM-DD" stamp' },

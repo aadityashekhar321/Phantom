@@ -21,18 +21,29 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-    const [locale, setLocaleState] = useState<Locale>('en');
+    const [locale, setLocaleState] = useState<Locale>(() => {
+        if (typeof window === 'undefined') return 'en';
+
+        try {
+            const stored = sessionStorage.getItem('phantom-locale') as Locale | null;
+            return stored && stored in locales ? stored : 'en';
+        } catch {
+            return 'en';
+        }
+    });
 
     useEffect(() => {
-        const stored = (sessionStorage.getItem('phantom-locale') as Locale) || 'en';
-        setLocaleState(stored in locales ? stored : 'en');
-    }, []);
+        document.documentElement.setAttribute('lang', locale);
+
+        try {
+            sessionStorage.setItem('phantom-locale', locale);
+        } catch {
+            // Ignore storage failures in restricted browsing modes.
+        }
+    }, [locale]);
 
     const setLocale = useCallback((l: Locale) => {
         setLocaleState(l);
-        sessionStorage.setItem('phantom-locale', l);
-        // Update <html lang="…"> for SEO / a11y
-        document.documentElement.setAttribute('lang', l);
     }, []);
 
     return (

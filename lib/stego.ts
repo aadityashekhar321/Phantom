@@ -25,6 +25,20 @@ const END_MARKER = '\x00\x00PHANTOM_END\x00\x00';
 function textToBytes(text: string): Uint8Array { return new TextEncoder().encode(text + END_MARKER); }
 function bytesToText(bytes: Uint8Array): string { return new TextDecoder().decode(bytes); }
 
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+}
+
 // ─── Mode A: LSB Steganography (invisible, PNG-only) ─────────────────────────
 
 /**
@@ -198,8 +212,7 @@ export async function hideTextInImageQR(
 
                 // White background box
                 ctx.fillStyle = '#FFFFFF';
-                ctx.beginPath();
-                ctx.roundRect(x - 4, y - 4, totalQr + 8, totalQr + 26, 8);
+                roundRect(ctx, x - 4, y - 4, totalQr + 8, totalQr + 26, 8);
                 ctx.fill();
 
                 // Draw QR canvas

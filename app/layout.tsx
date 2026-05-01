@@ -8,7 +8,6 @@ import { LanguageProvider } from '@/components/LanguageProvider';
 import { SettingsProvider } from '@/components/SettingsProvider';
 import { AmbientBackground } from '@/components/AmbientBackground';
 import { OfflineBadge } from '@/components/OfflineBadge';
-import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
 
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
@@ -53,7 +52,6 @@ export default function RootLayout({
 
               <OfflineBadge />
               <Toaster theme="dark" position="bottom-center" toastOptions={{ className: 'font-sans' }} />
-              <Analytics />
             </SettingsProvider>
           </LanguageProvider>
         </ThemeProvider>
