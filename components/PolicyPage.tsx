@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, LucideIcon } from 'lucide-react';
+import { ArrowRight, ChevronRight, LucideIcon } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 
 const VP = { once: true, amount: 0.12 } as const;
@@ -55,6 +55,51 @@ type PolicyPageProps = {
     footerBody: ReactNode;
     footerLinks: PolicyLink[];
 };
+
+function SectionCard({ section, index }: { section: PolicySection; index: number }) {
+    const Icon = section.icon;
+
+    return (
+        <motion.div
+            custom={index * 0.08}
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={VP}
+        >
+            <GlassCard className={`group relative overflow-hidden border-t ${section.tone} p-5 sm:p-6 transition-transform duration-300 hover:-translate-y-1`}>
+                <div className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r ${section.accent} opacity-80`} />
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                <div className="relative z-10 mb-5 flex items-start gap-4">
+                    <div className="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/35 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+                        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${section.accent} opacity-90`} />
+                        <Icon className="relative z-10 h-5 w-5 text-white" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.26em] text-gray-500">
+                            <span>Section</span>
+                            <ChevronRight className="h-3 w-3" />
+                            <span>{String(index + 1).padStart(2, '0')}</span>
+                        </div>
+                        <h3 className="text-xl font-bold tracking-tight text-white sm:text-[1.35rem]">{section.title}</h3>
+                    </div>
+                </div>
+
+                <div className="relative z-10">
+                    <ul className="space-y-3 text-gray-300">
+                        {section.points.map((point) => (
+                            <li key={point} className="flex gap-3 text-sm leading-6 sm:text-[15px]">
+                                <span className={`mt-2 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-gradient-to-br ${section.accent} shadow-[0_0_18px_rgba(99,102,241,0.35)]`} />
+                                <span>{point}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </GlassCard>
+        </motion.div>
+    );
+}
 
 export function PolicyPage({
     eyebrow,
@@ -129,10 +174,12 @@ export function PolicyPage({
                         whileInView="visible"
                         viewport={VP}
                     >
-                        <GlassCard className="h-full border-white/10 p-5 sm:p-6">
-                            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gray-500">{stat.label}</p>
-                            <p className="mt-3 text-2xl font-black tracking-tight text-white">{stat.value}</p>
-                            <p className="mt-2 text-sm leading-6 text-gray-400">{stat.detail}</p>
+                        <GlassCard className="group relative h-full overflow-hidden border-white/10 p-5 sm:p-6 transition-transform duration-300 hover:-translate-y-1">
+                            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                            <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-indigo-500/10 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
+                            <p className="relative z-10 text-[11px] font-semibold uppercase tracking-[0.26em] text-gray-500">{stat.label}</p>
+                            <p className="relative z-10 mt-3 text-2xl font-black tracking-tight text-white">{stat.value}</p>
+                            <p className="relative z-10 mt-2 text-sm leading-6 text-gray-400">{stat.detail}</p>
                         </GlassCard>
                     </motion.div>
                 ))}
@@ -164,39 +211,9 @@ export function PolicyPage({
                 </motion.div>
 
                 <div className="space-y-5">
-                    {sections.map((section, index) => {
-                        const Icon = section.icon;
-                        return (
-                            <motion.div
-                                key={section.title}
-                                custom={index * 0.08}
-                                variants={fadeUp}
-                                initial="hidden"
-                                whileInView="visible"
-                                viewport={VP}
-                            >
-                                <GlassCard className={`border-t ${section.tone} p-5 sm:p-6`}>
-                                    <div className="mb-4 flex items-center gap-4">
-                                        <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl ${section.accent}`}>
-                                            <Icon className="h-5 w-5 text-white" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gray-500">Section {String(index + 1).padStart(2, '0')}</p>
-                                            <h3 className="text-xl font-bold text-white">{section.title}</h3>
-                                        </div>
-                                    </div>
-                                    <ul className="space-y-3 text-gray-300">
-                                        {section.points.map((point) => (
-                                            <li key={point} className="flex gap-3 text-sm leading-6 sm:text-[15px]">
-                                                <span className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-gray-400" />
-                                                <span>{point}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </GlassCard>
-                            </motion.div>
-                        );
-                    })}
+                    {sections.map((section, index) => (
+                        <SectionCard key={section.title} section={section} index={index} />
+                    ))}
                 </div>
             </section>
 
@@ -207,7 +224,8 @@ export function PolicyPage({
                 whileInView="visible"
                 viewport={VP}
             >
-                <GlassCard className="border-white/10 p-6 sm:p-8 md:p-10">
+                <GlassCard className="relative overflow-hidden border-white/10 p-6 sm:p-8 md:p-10">
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent" />
                     <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
                         <div className="space-y-4">
                             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-500">{footerTitle}</p>
@@ -218,7 +236,7 @@ export function PolicyPage({
                                 <a
                                     key={link.href}
                                     href={link.href}
-                                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-gray-200 transition-colors hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
+                                    className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-gray-200 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
                                 >
                                     {link.label}
                                     <ArrowRight className="h-4 w-4" />
