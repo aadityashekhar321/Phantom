@@ -274,6 +274,30 @@ export function Navbar() {
                                 </Link>
                             </motion.div>
                         ))}
+
+                        {/* Legal Section Divider */}
+                        <div className="w-16 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+                        {/* Legal Links */}
+                        {[
+                            { href: '/privacy', label: 'Privacy Policy' },
+                            { href: '/security-policy', label: 'Security Policy' },
+                        ].map((link, i) => (
+                            <motion.div
+                                key={link.href}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: (navLinks.length + 1) * 0.07 + i * 0.07 + 0.1 }}
+                            >
+                                <Link
+                                    href={link.href}
+                                    onClick={closeMenu}
+                                    className={`text-lg font-semibold transition-all duration-200 hover:scale-110 active:scale-95 p-3 text-gray-400 hover:text-white`}
+                                >
+                                    {link.label}
+                                </Link>
+                            </motion.div>
+                        ))}
                     </motion.div>
                 )}
             </AnimatePresence>

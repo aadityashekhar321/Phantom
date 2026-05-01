@@ -53,7 +53,7 @@ export function Footer() {
                     </div>
 
                     {/* Navigation (3 cols) */}
-                    <div className="space-y-5 md:col-span-4 lg:col-span-3">
+                    <div className="space-y-5 md:col-span-4 lg:col-span-2">
                         <h3 className="text-xs font-extrabold uppercase tracking-[0.2em] text-gray-500">{t.footer.navigate}</h3>
                         <ul className="space-y-3">
                             {[
@@ -72,8 +72,26 @@ export function Footer() {
                         </ul>
                     </div>
 
-                    {/* Trust Signals & Tech Stack (4 cols) */}
-                    <div className="space-y-5 md:col-span-8 lg:col-span-4">
+                    {/* Legal & Compliance (2 cols) */}
+                    <div className="space-y-5 md:col-span-4 lg:col-span-2">
+                        <h3 className="text-xs font-extrabold uppercase tracking-[0.2em] text-gray-500">Legal</h3>
+                        <ul className="space-y-3">
+                            {[
+                                { href: "/privacy", icon: <FileText className="w-4 h-4 text-blue-400" />, label: "Privacy Policy" },
+                                { href: "/security-policy", icon: <Shield className="w-4 h-4 text-amber-400" />, label: "Security Policy" },
+                            ].map((link) => (
+                                <li key={link.href}>
+                                    <Link href={link.href} className="text-sm font-medium text-gray-400 hover:text-white transition-colors flex items-center gap-3 w-fit group/link">
+                                        <span className="p-1 rounded-md bg-white/5 opacity-70 group-hover/link:opacity-100 group-hover/link:bg-white/10 transition-all">{link.icon}</span>
+                                        {link.label}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* Trust Signals & Tech Stack (3 cols) */}
+                    <div className="space-y-5 md:col-span-8 lg:col-span-3">
                         <h3 className="text-xs font-extrabold uppercase tracking-[0.2em] text-gray-500">{t.footer.securityPromises}</h3>
                         <ul className="space-y-2.5 text-sm text-gray-400">
                             {t.footer.promises.map((promise, i) => (
