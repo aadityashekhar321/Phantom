@@ -23,6 +23,30 @@ const QRCodeSVG = dynamic(() => import('qrcode.react').then((mod) => mod.QRCodeS
   loading: () => <div className="w-[200px] h-[200px] flex items-center justify-center text-xs text-gray-500 bg-white/5 rounded-xl border border-white/10 animate-pulse">Loading engine...</div>,
 });
 
+type ShareLinkRecord = {
+  id: string;
+  url: string;
+  expiry: '1h' | '24h' | '7d' | 'none';
+  createdAt: number;
+  revoked: boolean;
+};
+
+type PhantomAttachmentArchive = {
+  phantom_batch: true;
+  version: 1;
+  createdAt: number;
+  count: number;
+  entries: Record<string, string>;
+};
+
+type RestoredAttachment = {
+  name: string;
+  dataUrl: string;
+};
+
+const SHARE_LINKS_STORAGE_KEY = 'phantom_share_links';
+const MAX_SHARE_LINKS = 8;
+
 export default function Home() {
   const t = useT();
   const [mode, setMode] = useState<'encode' | 'decode'>('encode');
@@ -52,12 +76,18 @@ export default function Home() {
 
   // Category 2: Share expiry, text diff, batch files, prev decoded
   const [shareExpiry, setShareExpiry] = useState<'1h' | '24h' | '7d' | 'none'>('none');
+  const [shareLinks, setShareLinks] = useState<ShareLinkRecord[]>([]);
+  const [activeShareLinkId, setActiveShareLinkId] = useState<string | null>(null);
   const [prevDecoded, setPrevDecoded] = useState<string | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const batchInputRef = useRef<HTMLInputElement>(null);
   const [batchFiles, setBatchFiles] = useState<{ name: string; data: string }[]>([]);
   const [batchLoading, setBatchLoading] = useState(false);
   const [batchPassword, setBatchPassword] = useState('');
+  const [attachmentArchive, setAttachmentArchive] = useState<PhantomAttachmentArchive | null>(null);
+  const [attachmentArchiveName, setAttachmentArchiveName] = useState('');
+  const [restoredAttachments, setRestoredAttachments] = useState<RestoredAttachment[]>([]);
+  const [unlockingArchive, setUnlockingArchive] = useState(false);
 
   const { selfDestructEnabled, selfDestructDuration } = useSettings();
   const [destructCountdown, setDestructCountdown] = useState<number | null>(null);
@@ -93,32 +123,73 @@ export default function Home() {
 
   // URL Hash Deep Linking
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hash = window.location.hash;
-      if (hash && hash.startsWith('#data=')) {
-        try {
-          // Check for expiry parameter first
-          const hashContent = hash.replace('#data=', '');
-          const expMatch = hashContent.match(/&exp=(\d+)$/);
-          if (expMatch) {
-            const expiry = parseInt(expMatch[1]);
-            if (Date.now() > expiry) {
-              toast.error('This secure link has expired and cannot be loaded.');
-              window.history.replaceState(null, '', window.location.pathname);
-              return;
-            }
-          }
-          const encodedData = decodeURIComponent(hashContent.replace(/&exp=\d+$/, ''));
-          setText(encodedData);
-          setMode('decode');
-          setHasInteracted(true);
-          toast.success('Secure payload detected from URL! Ready to decrypt.');
-          window.history.replaceState(null, '', window.location.pathname);
-        } catch {
-          console.error('Failed to parse URL hash data');
+    if (typeof window === 'undefined') return;
+
+    const hash = window.location.hash;
+    if (!hash || !hash.startsWith('#data=')) return;
+
+    const hydrateFromHash = async () => {
+      try {
+        let hashContent = hash.replace('#data=', '');
+        const idMatch = hashContent.match(/&id=([^&]+)$/);
+        const shareLinkId = idMatch?.[1] ?? null;
+        if (idMatch) {
+          hashContent = hashContent.slice(0, -idMatch[0].length);
         }
+
+        const expMatch = hashContent.match(/&exp=(\d+)$/);
+        if (expMatch) {
+          const expiry = parseInt(expMatch[1], 10);
+          if (Date.now() > expiry) {
+            toast.error('This secure link has expired and cannot be loaded.');
+            window.history.replaceState(null, '', window.location.pathname);
+            return;
+          }
+          hashContent = hashContent.replace(/&exp=\d+$/, '');
+        }
+
+        if (shareLinkId) {
+          const response = await fetch(`/api/share/status?id=${encodeURIComponent(shareLinkId)}`, { cache: 'no-store' });
+          if (!response.ok) {
+            toast.error('Could not validate secure link status from server.');
+            window.history.replaceState(null, '', window.location.pathname);
+            return;
+          }
+
+          const status = (await response.json()) as { ok: boolean; exists: boolean; revoked: boolean; expired: boolean };
+          if (!status.ok || !status.exists) {
+            toast.error('This secure link is invalid or unknown to the server.');
+            window.history.replaceState(null, '', window.location.pathname);
+            return;
+          }
+
+          if (status.revoked) {
+            toast.error('This secure link has been revoked.');
+            window.history.replaceState(null, '', window.location.pathname);
+            return;
+          }
+
+          if (status.expired) {
+            toast.error('This secure link has expired and cannot be loaded.');
+            window.history.replaceState(null, '', window.location.pathname);
+            return;
+          }
+
+          setActiveShareLinkId(shareLinkId);
+        }
+
+        const encodedData = decodeURIComponent(hashContent);
+        setText(encodedData);
+        setMode('decode');
+        setHasInteracted(true);
+        toast.success('Secure payload detected from URL! Ready to decrypt.');
+        window.history.replaceState(null, '', window.location.pathname);
+      } catch {
+        console.error('Failed to parse URL hash data');
       }
-    }
+    };
+
+    void hydrateFromHash();
   }, []);
 
   // Live QR Scanner Logic
@@ -225,6 +296,25 @@ export default function Home() {
 
     return () => clearInterval(interval);
   }, [output, selfDestructEnabled, selfDestructDuration]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const raw = window.localStorage.getItem(SHARE_LINKS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as ShareLinkRecord[];
+        setShareLinks(Array.isArray(parsed) ? parsed : []);
+      }
+    } catch {
+      setShareLinks([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(SHARE_LINKS_STORAGE_KEY, JSON.stringify(shareLinks.slice(-MAX_SHARE_LINKS)));
+  }, [shareLinks]);
 
   // Entropy Calculation
   const calculateEntropy = (str: string) => {
@@ -355,16 +445,90 @@ export default function Home() {
         const { processCryptoAsync: enc } = await import('@/lib/cryptoWorkerClient');
         entries[f.name] = await enc('encode', f.data, batchPassword);
       }
-      const bundle = JSON.stringify({ phantom_batch: true, count: batchFiles.length, entries });
-      const blob = new Blob([bundle], { type: 'application/json' });
+      const bundle: PhantomAttachmentArchive = {
+        phantom_batch: true,
+        version: 1,
+        createdAt: Date.now(),
+        count: batchFiles.length,
+        entries,
+      };
+      const bundleString = JSON.stringify(bundle);
+      const blob = new Blob([bundleString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = `phantom_batch_${Date.now()}.phantom`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
       setBatchFiles([]); setBatchPassword('');
+      setAttachmentArchive(null);
+      setAttachmentArchiveName('');
+      setRestoredAttachments([]);
       toast.success(`${batchFiles.length} files encrypted and bundled into .phantom archive.`);
     } catch { toast.error('Batch encryption failed.'); }
     finally { setBatchLoading(false); }
+  };
+
+  const handleUnlockAttachmentArchive = async () => {
+    if (!attachmentArchive) {
+      toast.error('Load a secure attachment archive first.');
+      return;
+    }
+
+    if (!batchPassword) {
+      toast.error('Enter the archive password to unlock attachments.');
+      return;
+    }
+
+    setUnlockingArchive(true);
+    try {
+      const entries = Object.entries(attachmentArchive.entries);
+      const restored = await Promise.all(entries.map(async ([name, encryptedDataUrl]) => {
+        const { processCryptoAsync: dec } = await import('@/lib/cryptoWorkerClient');
+        const dataUrl = await dec('decode', encryptedDataUrl, batchPassword);
+        return { name, dataUrl };
+      }));
+
+      setRestoredAttachments(restored);
+      setOutput(`Unlocked ${restored.length} attachment(s) from ${attachmentArchiveName || 'archive'}.`);
+      toast.success(`Unlocked ${restored.length} attachment(s).`);
+    } catch {
+      toast.error('Archive password is wrong, or the archive is corrupted.');
+    } finally {
+      setUnlockingArchive(false);
+    }
+  };
+
+  const dataUrlToBlob = (dataUrl: string) => {
+    const [header, payload] = dataUrl.split(',');
+    if (!payload) {
+      return new Blob([dataUrl], { type: 'text/plain;charset=utf-8' });
+    }
+
+    const mimeMatch = header.match(/^data:([^;]+)(;base64)?$/);
+    const mimeType = mimeMatch?.[1] || 'application/octet-stream';
+
+    if (header.includes(';base64')) {
+      const binary = atob(payload);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) {
+        bytes[index] = binary.charCodeAt(index);
+      }
+      return new Blob([bytes], { type: mimeType });
+    }
+
+    return new Blob([decodeURIComponent(payload)], { type: mimeType });
+  };
+
+  const downloadRestoredAttachment = (attachment: RestoredAttachment) => {
+    const blob = dataUrlToBlob(attachment.dataUrl);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = attachment.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Downloaded ${attachment.name}.`);
   };
 
   // Simple Password Strength Evaluator
@@ -565,7 +729,7 @@ export default function Home() {
     setTimeout(() => setIsCopied(false), 2000);
   };
 
-  const generateShareLink = () => {
+  const generateShareLink = async () => {
     if (!output) return;
     const encodedOutput = encodeURIComponent(output);
 
@@ -574,17 +738,69 @@ export default function Home() {
       return;
     }
 
-    let expMs = '';
+    const linkId = `share_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    const metaParams: string[] = [];
+    let expiresAt: number | null = null;
     if (shareExpiry !== 'none') {
       const durations: Record<string, number> = { '1h': 3600000, '24h': 86400000, '7d': 604800000 };
-      expMs = `&exp=${Date.now() + durations[shareExpiry]}`;
+      expiresAt = Date.now() + durations[shareExpiry];
+      metaParams.push(`exp=${expiresAt}`);
     }
-    const url = `${window.location.origin}/#data=${encodedOutput}${expMs}`;
+    metaParams.push(`id=${linkId}`);
+    const url = `${window.location.origin}/#data=${encodedOutput}${metaParams.length > 0 ? `&${metaParams.join('&')}` : ''}`;
+
+    const registerResponse = await fetch('/api/share/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: linkId, expiresAt }),
+    });
+
+    if (!registerResponse.ok) {
+      toast.error('Could not register secure link on server. Try again.');
+      return;
+    }
+
     navigator.clipboard.writeText(url);
     triggerHaptic();
     const label = shareExpiry === 'none' ? 'no expiry' : `expires in ${shareExpiry}`;
     toast.success(`Secure link copied (${label})!`);
+    setActiveShareLinkId(linkId);
+    setShareLinks((prev) => [
+      ...prev.filter((link) => link.id !== linkId),
+      {
+        id: linkId,
+        url,
+        expiry: shareExpiry,
+        createdAt: Date.now(),
+        revoked: false,
+      },
+    ].slice(-MAX_SHARE_LINKS));
     setMobileMenuOpen(false);
+  };
+
+  const revokeShareLink = async (id?: string) => {
+    const targetId = id || activeShareLinkId || shareLinks[shareLinks.length - 1]?.id;
+    if (!targetId) {
+      toast.info('No share link is available to revoke yet.');
+      return;
+    }
+
+    const response = await fetch('/api/share/revoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: targetId }),
+    });
+
+    if (!response.ok) {
+      toast.error('Server revoke failed. Try again.');
+      return;
+    }
+
+    setShareLinks((prev) => prev.map((link) => (link.id === targetId ? { ...link, revoked: true } : link)));
+    if (activeShareLinkId === targetId) {
+      setActiveShareLinkId(null);
+    }
+    toast.success('Share link revoked on server.');
   };
 
   const handlePanic = () => {
@@ -660,6 +876,10 @@ export default function Home() {
       return;
     }
 
+    setAttachmentArchive(null);
+    setAttachmentArchiveName('');
+    setRestoredAttachments([]);
+
     setMode('encode');
     setLoading(true);
 
@@ -670,7 +890,31 @@ export default function Home() {
       if (file.name.endsWith('.phantom')) {
         reader.onload = (event) => {
           if (event.target?.result) {
-            setText(event.target.result as string);
+            const raw = event.target.result as string;
+
+            try {
+              const parsed = JSON.parse(raw) as Partial<PhantomAttachmentArchive>;
+              if (parsed.phantom_batch && parsed.entries && typeof parsed.entries === 'object') {
+                setAttachmentArchive({
+                  phantom_batch: true,
+                  version: 1,
+                  createdAt: typeof parsed.createdAt === 'number' ? parsed.createdAt : Date.now(),
+                  count: typeof parsed.count === 'number' ? parsed.count : Object.keys(parsed.entries).length,
+                  entries: parsed.entries,
+                });
+                setAttachmentArchiveName(file.name);
+                setRestoredAttachments([]);
+                setText('');
+                setMode('decode');
+                toast.success(`Encrypted attachment vault loaded (${Object.keys(parsed.entries).length} files). Enter the archive password to unlock.`);
+                setLoading(false);
+                return;
+              }
+            } catch {
+              // Not a batch archive; fall back to the legacy Vault text decode path.
+            }
+
+            setText(raw);
             setMode('decode');
             toast.success('Phantom Vault file detected! Ready to unlock.');
             setLoading(false);
@@ -1328,6 +1572,34 @@ export default function Home() {
                     )}
                   </div>{/* end action toolbar flex */}
 
+                  {shareLinks.length > 0 && (
+                    <div className="hidden sm:block mt-4 rounded-2xl border border-white/5 bg-black/30 p-3">
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-[0.24em] text-gray-500 font-bold">Share vault</p>
+                          <p className="text-xs text-gray-400">Manage active links and revoke from server.</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2 max-h-28 overflow-y-auto custom-scrollbar">
+                        {shareLinks.slice().reverse().map((link) => (
+                          <div key={link.id} className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs ${link.revoked ? 'border-rose-500/20 bg-rose-500/5 text-rose-200/80' : 'border-white/10 bg-white/[0.03] text-gray-300'}`}>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold">{link.revoked ? 'Revoked' : 'Active'} link</p>
+                              <p className="text-[10px] text-gray-500 uppercase tracking-[0.18em]">{link.expiry === 'none' ? 'No expiry' : `Expires ${link.expiry}`}</p>
+                            </div>
+                            <button
+                              onClick={() => revokeShareLink(link.id)}
+                              disabled={link.revoked}
+                              className="shrink-0 rounded-lg border border-white/10 bg-black/30 px-2 py-1 font-semibold text-gray-300 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              Revoke
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
 
                   {/* Mobile Actions Menu Toggle */}
                   <div className="sm:hidden absolute top-3 right-3 z-10">
@@ -1433,11 +1705,50 @@ export default function Home() {
                 <Files className="w-5 h-5 text-violet-300" />
               </div>
               <div>
-                <h2 className="text-lg font-extrabold text-white tracking-tight">{t.vault.batchEncrypt}</h2>
-                <p className="text-xs sm:text-sm text-gray-400">{t.vault.batchEncryptDesc}</p>
+                <h2 className="text-lg font-extrabold text-white tracking-tight">Secure Attachments Vault</h2>
+                <p className="text-xs sm:text-sm text-gray-400">Encrypt, bundle, restore, and download multiple files locally.</p>
               </div>
             </div>
           </div>
+
+          {attachmentArchive && (
+            <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-4 sm:p-5 space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.24em] text-violet-200 font-bold">Encrypted archive loaded</p>
+                  <h3 className="text-lg font-bold text-white">{attachmentArchive.count} file(s) in {attachmentArchiveName || 'archive'}</h3>
+                  <p className="text-xs text-gray-400 mt-1">Enter the archive password and unlock the attachment list below.</p>
+                </div>
+                <button
+                  onClick={handleUnlockAttachmentArchive}
+                  disabled={unlockingArchive}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/15 px-4 py-2.5 text-sm font-semibold text-violet-200 hover:bg-violet-500/25 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {unlockingArchive ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-violet-200/30 border-t-violet-200" /> : <Lock className="h-4 w-4" />}
+                  Unlock archive
+                </button>
+              </div>
+
+              {restoredAttachments.length > 0 && (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {restoredAttachments.map((attachment) => (
+                    <div key={attachment.name} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/35 px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-white">{attachment.name}</p>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500">Restored attachment</p>
+                      </div>
+                      <button
+                        onClick={() => downloadRestoredAttachment(attachment)}
+                        className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-gray-200 hover:text-white hover:bg-white/10"
+                      >
+                        Download
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             {/* Left Column: Input / Actions */}
@@ -1646,70 +1957,72 @@ export default function Home() {
         </p>
       </div>
 
-      <GlassCard className="w-full max-w-4xl mx-auto px-5 py-8 sm:px-10 sm:py-12 relative overflow-hidden mt-8">
-        <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none text-white">
-          <ShieldCheck className="w-48 h-48" />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
-          <div className="bg-black/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-4 hover:border-indigo-500/30 transition-colors">
-            <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <h3 className="text-xl font-bold text-white">1. Steganography</h3>
-            <p className="text-indigo-300 font-semibold text-sm uppercase tracking-wider">Hide Text Inside an Image</p>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Phantom injects your scrambled secret message directly into the pixel data of an innocent-looking picture.
-              The image looks 100% normal to the human eye, but acts as a carrier for your secret.
-            </p>
+      <div className="w-full max-w-4xl mx-auto mt-8 px-4 sm:px-0 overflow-x-clip [perspective:1200px]">
+        <GlassCard className="w-full px-5 py-8 sm:px-10 sm:py-12 relative overflow-hidden transform-gpu">
+          <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none text-white">
+            <ShieldCheck className="w-48 h-48" />
           </div>
 
-          <div className="bg-black/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-4 hover:border-cyan-500/30 transition-colors">
-            <div className="w-12 h-12 bg-cyan-500/20 rounded-2xl flex items-center justify-center text-cyan-400">
-              <Lock className="w-6 h-6" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+            <div className="bg-black/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-4 hover:border-indigo-500/30 transition-colors">
+              <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold text-white">1. Steganography</h3>
+              <p className="text-indigo-300 font-semibold text-sm uppercase tracking-wider">Hide Text Inside an Image</p>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Phantom injects your scrambled secret message directly into the pixel data of an innocent-looking picture.
+                The image looks 100% normal to the human eye, but acts as a carrier for your secret.
+              </p>
             </div>
-            <h3 className="text-xl font-bold text-white">2. Full Encryption</h3>
-            <p className="text-cyan-300 font-semibold text-sm uppercase tracking-wider">Lock the Image Itself</p>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Phantom converts the entire image file into a massive string of data and encrypts the whole thing using AES-256-GCM.
-              The picture is completely destroyed until the correct Secret Key reconstructs it on the other side.
-            </p>
-          </div>
-        </div>
 
-        {/* Feature Comparison - Mobile Responsive Cards */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-          <div className="bg-black/40 border border-indigo-500/20 rounded-2xl p-5 hover:border-indigo-500/40 transition-colors">
-            <h4 className="font-bold text-lg text-indigo-400 mb-1">Steganography</h4>
-            <p className="text-sm text-gray-400 mb-3">Hides text mathematically in pixel LSBs or via QR Overlay.</p>
-            <div className="flex flex-col gap-2 text-sm">
-              <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                <span className="text-gray-500">Visual Output</span>
-                <span className="text-gray-300 font-medium text-right">Looks identical or QR overlay</span>
+            <div className="bg-black/50 border border-white/10 rounded-3xl p-6 sm:p-8 space-y-4 hover:border-cyan-500/30 transition-colors">
+              <div className="w-12 h-12 bg-cyan-500/20 rounded-2xl flex items-center justify-center text-cyan-400">
+                <Lock className="w-6 h-6" />
               </div>
-              <div className="flex justify-between items-center pt-1">
-                <span className="text-gray-500">Best For</span>
-                <span className="text-gray-300 font-medium text-right">Passing messages in plain sight</span>
-              </div>
+              <h3 className="text-xl font-bold text-white">2. Full Encryption</h3>
+              <p className="text-cyan-300 font-semibold text-sm uppercase tracking-wider">Lock the Image Itself</p>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Phantom converts the entire image file into a massive string of data and encrypts the whole thing using AES-256-GCM.
+                The picture is completely destroyed until the correct Secret Key reconstructs it on the other side.
+              </p>
             </div>
           </div>
 
-          <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 hover:border-cyan-500/40 transition-colors">
-            <h4 className="font-bold text-lg text-cyan-400 mb-1">Full Encryption</h4>
-            <p className="text-sm text-gray-400 mb-3">Scrambles the entire raw file into ciphertext.</p>
-            <div className="flex flex-col gap-2 text-sm">
-              <div className="flex justify-between items-center border-b border-white/5 pb-2">
-                <span className="text-gray-500">Visual Output</span>
-                <span className="text-gray-300 font-medium text-right">Unreadable text block (.txt)</span>
+          {/* Feature Comparison - Mobile Responsive Cards */}
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+            <div className="bg-black/40 border border-indigo-500/20 rounded-2xl p-5 hover:border-indigo-500/40 transition-colors">
+              <h4 className="font-bold text-lg text-indigo-400 mb-1">Steganography</h4>
+              <p className="text-sm text-gray-400 mb-3">Hides text mathematically in pixel LSBs or via QR Overlay.</p>
+              <div className="flex flex-col gap-2 text-sm">
+                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span className="text-gray-500">Visual Output</span>
+                  <span className="text-gray-300 font-medium text-right">Looks identical or QR overlay</span>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-gray-500">Best For</span>
+                  <span className="text-gray-300 font-medium text-right">Passing messages in plain sight</span>
+                </div>
               </div>
-              <div className="flex justify-between items-center pt-1">
-                <span className="text-gray-500">Best For</span>
-                <span className="text-gray-300 font-medium text-right">Archiving or locking images completely</span>
+            </div>
+
+            <div className="bg-black/40 border border-cyan-500/20 rounded-2xl p-5 hover:border-cyan-500/40 transition-colors">
+              <h4 className="font-bold text-lg text-cyan-400 mb-1">Full Encryption</h4>
+              <p className="text-sm text-gray-400 mb-3">Scrambles the entire raw file into ciphertext.</p>
+              <div className="flex flex-col gap-2 text-sm">
+                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span className="text-gray-500">Visual Output</span>
+                  <span className="text-gray-300 font-medium text-right">Unreadable text block (.txt)</span>
+                </div>
+                <div className="flex justify-between items-center pt-1">
+                  <span className="text-gray-500">Best For</span>
+                  <span className="text-gray-300 font-medium text-right">Archiving or locking images completely</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </GlassCard>
+        </GlassCard>
+      </div>
 
       {/* QR Scanner Modal */}
       <AnimatePresence>

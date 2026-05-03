@@ -34,7 +34,7 @@ export default function About() {
                 <p className="text-gray-400 text-base sm:text-lg">Your private gateway to secure communication.</p>
             </div>
 
-            <GlassCard className="max-w-2xl mx-auto text-center px-5 py-8 sm:px-10 sm:py-16">
+            <GlassCard interactive={false} className="max-w-2xl mx-auto text-center px-5 py-8 sm:px-10 sm:py-16">
                 <div className="flex flex-col items-center gap-12 sm:gap-16">
                     <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 shadow-lg shadow-indigo-500/20 flex flex-col items-center justify-center">
                         <span className="text-white font-bold text-xl leading-none">P</span>

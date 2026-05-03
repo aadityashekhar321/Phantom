@@ -67,7 +67,7 @@ function SectionCard({ section, index }: { section: PolicySection; index: number
             whileInView="visible"
             viewport={VP}
         >
-            <GlassCard className={`group relative overflow-hidden border-t ${section.tone} p-5 sm:p-6 transition-transform duration-300 hover:-translate-y-1`}>
+            <GlassCard className={`group relative overflow-hidden border-t ${section.tone} p-5 sm:p-6 transition-transform duration-300`}>
                 <div className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r ${section.accent} opacity-80`} />
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
@@ -174,7 +174,7 @@ export function PolicyPage({
                         whileInView="visible"
                         viewport={VP}
                     >
-                        <GlassCard className="group relative h-full overflow-hidden border-white/10 p-5 sm:p-6 transition-transform duration-300 hover:-translate-y-1">
+                        <GlassCard className="group relative h-full overflow-hidden border-white/10 p-5 sm:p-6 transition-transform duration-300">
                             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
                             <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-indigo-500/10 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
                             <p className="relative z-10 text-[11px] font-semibold uppercase tracking-[0.26em] text-gray-500">{stat.label}</p>

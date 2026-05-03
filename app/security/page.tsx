@@ -261,7 +261,7 @@ export default function SecurityInfo() {
                 <p className="text-gray-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">{t.security.subtitle}</p>
             </div>
 
-            <GlassCard className="max-w-3xl mx-auto px-5 py-8 sm:px-10 sm:py-12">
+            <GlassCard interactive={false} className="max-w-3xl mx-auto px-5 py-8 sm:px-10 sm:py-12">
                 <div className="flex flex-col gap-12 sm:gap-16">
 
                     {/* ── 1. Why Phantom? ── */}

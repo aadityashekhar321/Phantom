@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Github, Shield, Lock, FileText, Clock, Star, Scale, Eye, Database } from 'lucide-react';
+import { Github, Shield, Lock, FileText, Clock, Star, Scale } from 'lucide-react';
 import { useT } from '@/components/LanguageProvider';
 
 export function Footer() {
@@ -76,21 +76,14 @@ export function Footer() {
                     <div className="space-y-5 md:col-span-4 lg:col-span-2">
                         <h3 className="text-xs font-extrabold uppercase tracking-[0.2em] text-gray-500">Legal</h3>
                         <ul className="space-y-3">
-                            {[
-                                { href: "/legal", icon: <Scale className="w-4 h-4 text-indigo-400" />, label: "Legal Hub" },
-                                { href: "/privacy", icon: <FileText className="w-4 h-4 text-blue-400" />, label: "Privacy Policy" },
-                                { href: "/security-policy", icon: <Shield className="w-4 h-4 text-amber-400" />, label: "Security Policy" },
-                                { href: "/terms", icon: <Lock className="w-4 h-4 text-violet-400" />, label: "Terms of Service" },
-                                { href: "/accessibility", icon: <Eye className="w-4 h-4 text-emerald-400" />, label: "Accessibility" },
-                                { href: "/data-practices", icon: <Database className="w-4 h-4 text-pink-400" />, label: "Data Practices" },
-                            ].map((link) => (
-                                <li key={link.href}>
-                                    <Link href={link.href} className="text-sm font-medium text-gray-400 hover:text-white transition-colors flex items-center gap-3 w-fit group/link">
-                                        <span className="p-1 rounded-md bg-white/5 opacity-70 group-hover/link:opacity-100 group-hover/link:bg-white/10 transition-all">{link.icon}</span>
-                                        {link.label}
-                                    </Link>
-                                </li>
-                            ))}
+                            <li>
+                                <Link href="/legal" className="text-sm font-medium text-gray-400 hover:text-white transition-colors flex items-center gap-3 w-fit group/link">
+                                    <span className="p-1 rounded-md bg-white/5 opacity-70 group-hover/link:opacity-100 group-hover/link:bg-white/10 transition-all">
+                                        <Scale className="w-4 h-4 text-indigo-400" />
+                                    </span>
+                                    Legal Hub
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 
