@@ -7,9 +7,22 @@ import { useT } from '@/components/LanguageProvider';
 
 const changelog = [
     {
+        version: 'v2.6.0',
+        date: '2026-05-03',
+        tag: 'latest',
+        changes: [
+            { type: 'feat', text: 'Server-Backed Share Link Revocation — added persistent share-link management with register, revoke, and status endpoints so expired links can be invalidated server-side' },
+            { type: 'feat', text: 'Encrypted Attachments Vault — introduced batch file encryption with bundled .phantom archive export plus unlock-and-restore flow for individual files' },
+            { type: 'feat', text: 'Reduced Motion Accessibility — expanded prefers-reduced-motion support across animated components for a safer, calmer experience' },
+            { type: 'refactor', text: 'Share Vault UI — consolidated revocation controls into a cleaner single-panel layout' },
+            { type: 'fix', text: 'Share Link Validation — now checks link status before payload loading so revoked or expired links are rejected immediately' },
+            { type: 'fix', text: 'Archive Restore Flow — fixed .phantom restore so bundled files unlock and download correctly' },
+        ],
+    },
+    {
         version: 'v2.5.0',
         date: '2026-05-01',
-        tag: 'latest',
+        tag: '',
         changes: [
             { type: 'fix', text: 'Removed the analytics dependency so the app matches its zero-telemetry and no-network claims' },
             { type: 'fix', text: 'Fixed locale hydration so stored language preferences update the document language consistently' },
